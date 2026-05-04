@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="/assets/logo.png" alt="Logo Syncro" width="200" />
+  <img src="/assets/Logo.png" alt="Logo" width="200" />
 
   <h1>Proyecto ING-2</h1>
   <p><strong>Sistema de Gestión para Centros de Actividades</strong></p>
