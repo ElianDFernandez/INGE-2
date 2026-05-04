@@ -1,16 +1,16 @@
 <div align="center">
-  <img src="/assets/Logo.png" alt="Logo" width="400" />
-
+  <img src="/assets/Logo.png" alt="Logo" style="max-width: 100%; height: auto; width: 450px; margin-bottom: 20px;" />
+  
   <h1>Proyecto ING-2</h1>
   <p><strong>Sistema de Gestión para Centros de Actividades</strong></p>
 
-  <p>
+  <p style="margin: 15px 0;">
     <img src="https://img.shields.io/badge/estado-en%20desarrollo-yellow?style=flat-square" />
     <img src="https://img.shields.io/badge/licencia-académico-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/universidad-UNLP-orange?style=flat-square" />
   </p>
 
-  <p><strong>Desarrollado por el equipo SYNCRO</strong></p>
+  <p style="margin-top: 20px;"><strong>Desarrollado por el equipo SYNCRO</strong></p>
 </div>
 
 ---
