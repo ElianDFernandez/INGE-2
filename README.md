@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="/assets/Logo.png" alt="Logo" width="600" />
+  <img src="/assets/Logo.png" alt="Logo" width="400" />
 
   <h1>Proyecto ING-2</h1>
   <p><strong>Sistema de Gestión para Centros de Actividades</strong></p>
