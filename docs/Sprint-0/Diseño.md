@@ -85,3 +85,103 @@ En MVT el flujo es: Usuario -> URL -> Vista -> Modelo -> Base de Datos -> Modelo
 - **Herramientas de Gestión de Proyectos:** Taiga
 
 ## Diseño de la Base de Datos
+Diagrma entidad-relación (ER) usando extension Mermaid para visualizar las tablas y sus relaciones.
+
+````mermaid
+---
+config:
+  layout: elk
+---
+erDiagram
+    Usuarios {
+        int id PK
+        string nombre
+        string email UK
+        string contrasena
+        string rol "ENUM: socio, empleado, admin"
+        boolean activo
+    }
+
+    Actividades {
+        int id PK
+        string nombre
+    }
+
+    Actividad_empleado {
+        int id PK
+        int actividad_id FK
+        int empleado_id FK
+    }
+
+    Clase {
+        int id PK
+        int turno_id FK
+        datetime fecha_hora_inicio
+        datetime fecha_hora_fin
+        decimal costo
+        integer cupo
+    }
+
+    Turnos {
+        int id PK
+        int actividad_id FK
+        string nombre
+    }
+
+    Inscripciones_Turno {
+        int id PK
+        int socio_id FK
+        int turno_id FK
+        date fecha_alta
+        string estado "ENUM: activa, de_baja"
+        date fecha_baja "nullable"
+    }
+
+    Reservas {
+        int id PK
+        int socio_id FK
+        int clase_id FK
+        datetime fecha_reserva
+        string estado "ENUM: activa, cancelada"
+        datetime fecha_cancelacion "nullable"
+        boolean asistio
+        string metodo_asistencia "ENUM: manual, QR, nulo"
+        datetime fecha_asistencia "nullable"
+    }
+    
+    Lista_Espera {
+        int id PK
+        int socio_id FK
+        int clase_id FK
+        datetime fecha_anotacion
+        string estado "ENUM: pendiente, notificado, resuelto"
+    }
+
+    Pagos {
+        int id PK
+        int socio_id FK
+        decimal monto
+        datetime fecha_pago
+        string tipo_pago "ENUM: sena, pago_total"
+        string metodo_pago "ENUM: efectivo, trans."
+    }
+
+    %% Relaciones / Relacionales
+    Usuarios ||--o{ Actividad_empleado : "asignado como empleado"
+    Actividades ||--o{ Actividad_empleado : "tiene asignado"
+    
+    Actividades ||--o{ Turnos : "se organiza en"
+    
+    Turnos ||--o{ Clase : "agrupa"
+    
+    Usuarios ||--o{ Inscripciones_Turno : "se inscribe a"
+    Turnos ||--o{ Inscripciones_Turno : "tiene inscriptos"
+
+    Usuarios ||--o{ Reservas : "realiza (como socio)"
+    Clase ||--o{ Reservas : "recibe"
+    
+    Usuarios ||--o{ Lista_Espera : "se anota en"
+    Clase ||--o{ Lista_Espera : "tiene"
+    
+    Usuarios ||--o{ Pagos : "efectua (como socio)"
+````
