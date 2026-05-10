@@ -160,6 +160,8 @@ erDiagram
     Pagos {
         int id PK
         int socio_id FK
+        int reserva_id FK "nullable"
+        int clase_id FK "nullable"
         decimal monto
         datetime fecha_pago
         string tipo_pago "ENUM: sena, pago_total"
@@ -184,4 +186,7 @@ erDiagram
     Clase ||--o{ Lista_Espera : "tiene"
     
     Usuarios ||--o{ Pagos : "efectua (como socio)"
+
+    Pagos ||--o{ Reservas : "puede estar asociado a"
+    Pagos ||--o{ Clase : "puede estar asociado a"
 ````
