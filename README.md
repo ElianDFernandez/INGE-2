@@ -42,12 +42,10 @@ La aplicación tiene como objetivo facilitar la administración de socios, la re
 
 ## 🛠 Tecnologías
 
-> *(En definición)*
-
-- Backend: —  
-- Frontend: —  
-- Base de datos: —  
-- Infraestructura: —  
+- Backend: Django
+- Frontend: Django Templates
+- Base de datos: SQLite
+- Infraestructura: Docker
 
 ---
 
@@ -57,3 +55,26 @@ La aplicación tiene como objetivo facilitar la administración de socios, la re
 git clone https://github.com/ElianDFernandez/INGE-2.git
 cd INGE-2
 ```
+
+**Docker-Django**
+```bash
+docker compose up -d --build
+```
+
+**Base de datos**
+```bash
+docker compose exec web python manage.py migrate
+```
+
+**Comandos utiles**
+```bash
+docker compose exec web python manage.py --help
+```
+
+**(Opcional) Para que Windows cree un "entorno virutal" para que el editor de código no marque errores**
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
+Luego, Ctrl + Shift + P -> Python: Select Interpreter -> venv\Scripts\python.exe

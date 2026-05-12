@@ -79,7 +79,7 @@ En MVT el flujo es: Usuario -> URL -> Vista -> Modelo -> Base de Datos -> Modelo
 ````
 ## Tecnologías a Utilizar
 - **Backend:** Django (Python)
-- **Frontend:** HTML, CSS, JavaScript (con Django Templates)
+- **Frontend:** HTML, CSS, JavaScript (con Django Templates), Bootstrap para estilos
 - **Base de Datos:** SQLlite (para desarrollo)
 - **Control de Versiones:** Git y GitHub
 - **Herramientas de Gestión de Proyectos:** Taiga
