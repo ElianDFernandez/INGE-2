@@ -133,6 +133,16 @@ LOGOUT_REDIRECT_URL = 'landing'
 LOGIN_URL = 'login'
 
 AUTHENTICATION_BACKENDS = [
-    'app.backends.EmailBackend', # Nuestro sistema por email
+    'app.backends.EmailBackend', # Nuestro sistema maneja autenticacion por mail
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# Configuración de Mailtrap
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST_USER = '76a696fd58288c'
+EMAIL_HOST_PASSWORD = '9112e531d2de12'
+EMAIL_PORT = 2525
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

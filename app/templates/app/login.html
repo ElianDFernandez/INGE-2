@@ -50,6 +50,9 @@
                             {% endif %}
                         </div>
                     {% endfor %}
+                    <div class="text-center mb-3">
+                        <a href="{% url 'password_reset' %}" class="text-decoration-none small">¿Olvidaste tu contraseña?</a>
+                    </div>
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg fs-6">
                             Ingresar <i class="fa-solid fa-right-to-bracket ms-1"></i>
