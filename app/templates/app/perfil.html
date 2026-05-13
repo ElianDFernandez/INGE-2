@@ -1,0 +1,69 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-2">
+                    <h4 class="card-title mt-2">Mi Perfil</h4>
+                </div>
+                {% if messages %}
+                <div class="mb-2">
+                    {% for message in messages %}
+                        {% if 'error' in message.tags %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {% elif 'warning' in message.tags %}
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        {% elif 'success' in message.tags %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {% else %}
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <!-- Formulario perfil -->
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Usuario</label>
+                            <input name="username" type="text" class="form-control" value="{{ user.username }}" placeholder="Usuario">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Email</label>
+                            <input name="email" type="email" class="form-control" value="{{ user.email }}" placeholder="correo@ejemplo.com">
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <h6 class="mb-2">Cambiar contraseña (opcional)</h6>
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Contraseña actual</label>
+                            <input name="current_password" type="password" class="form-control" placeholder="Dejar vacío para no cambiar">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Nueva contraseña</label>
+                            <input name="new_password" type="password" class="form-control" placeholder="Nueva contraseña">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'landing' %}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Atrás
+                        </a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

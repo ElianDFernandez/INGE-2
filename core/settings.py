@@ -130,6 +130,8 @@ LOGIN_REDIRECT_URL = 'home'
 
 LOGOUT_REDIRECT_URL = ''
 
+LOGIN_URL = 'login'
+
 AUTHENTICATION_BACKENDS = [
     'app.backends.EmailBackend', # Nuestro sistema por email
     'django.contrib.auth.backends.ModelBackend',
