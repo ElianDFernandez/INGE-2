@@ -147,7 +147,7 @@
                     {% if user.is_authenticated %}
                         {% if user.is_staff %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{% url 'actividades_list' %}">
                                 Actividades
                             </a>
                         </li>
