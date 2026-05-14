@@ -1,11 +1,359 @@
 {% extends 'app/base.html' %}
 
-{% block title %}Inicio - Gestión{% endblock %}
+{% block title %}Inicio - Centro de Gestión{% endblock %}
 
 {% block content %}
-<div class="bg-white p-4 rounded shadow-sm">
-    <h1>Bienvenido, {{ user.username }}</h1>
-    <p class="lead">Este es tu panel principal del Centro de Actividades.</p>
-    <hr>
+<style>
+    /* Encabezado principal */
+    .welcome-header {
+        background: linear-gradient(135deg, var(--cad-primary) 70%, var(--cad-secondary) 70%);
+        color: var(--cad-white);
+        padding: 40px 30px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 20px rgba(0, 67, 131, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-header h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0 0 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .welcome-header p {
+        font-size: 1.15rem;
+        margin: 0;
+        opacity: 0.9;
+        font-weight: 300;
+    }
+
+    /* Tarjetas base */
+    .dashboard-card {
+        background: var(--cad-white);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        height: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .dashboard-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--cad-gray);
+    }
+
+    .card-header-flex h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--cad-primary);
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .date-badge {
+        background: var(--cad-background);
+        color: var(--cad-text);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .btn-cta-small {
+        background: var(--cad-secondary);
+        color: var(--cad-white);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .btn-cta-small:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 67, 131, 0.3);
+        color: var(--cad-white);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+    }
+
+    .calendar-day-name {
+        text-align: center;
+        font-weight: 700;
+        color: var(--cad-text);
+        opacity: 0.7;
+        padding: 5px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1.15;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 2px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        font-size: 0.9rem;
+        color: var(--cad-text);
+    }
+
+    .calendar-day.other-month {
+        color: var(--cad-gray);
+        font-weight: 400;
+    }
+
+    .calendar-day:hover:not(.other-month):not(.today) {
+        background-color: var(--cad-background);
+        transform: translateY(-2px);
+    }
+
+    .calendar-day.today {
+        background: var(--cad-secondary);
+        color: var(--cad-white);
+        box-shadow: 0 4px 10px rgba(93, 165, 21, 0.3);
+    }
+
+    .calendar-day.today:hover {
+        background: var(--cad-secondary);
+        transform: scale(1.05);
+    }
+
+    .calendar-day.has-event:not(.today) {
+        background-color: var(--cad-background);
+        color: var(--cad-primary);
+    }
+
+    .calendar-day.has-event .activity-name,
+    .calendar-day.has-event .activity-time {
+        display: block;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .calendar-day.has-event .activity-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .calendar-day.has-event .activity-name {
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
+    .calendar-day.has-event .activity-time {
+        font-size: 0.62rem;
+        font-weight: 500;
+        opacity: 0.85;
+    }
+
+    .calendar-day.today .activity-time,
+    .calendar-day.today .activity-name {
+        color: inherit;
+    }
+
+    .activity-icon {
+        font-size: 0.62rem;
+        line-height: 1;
+    }
+
+    .event-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background-color: var(--cad-yellow);
+        border-radius: 50%;
+        bottom: 5px;
+    }
+
+    .calendar-day.today .event-dot {
+        background-color: var(--cad-yellow);
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, var(--cad-primary), var(--cad-secondary));
+        color: var(--cad-white);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 25px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+    }
+
+    .cta-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .cta-icon {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .cta-card h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .cta-card p {
+        font-size: 0.85rem;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    }
+
+    .cta-button {
+        background: var(--cad-white);
+        color: var(--cad-primary);
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .cta-button:hover {
+        background: var(--cad-background);
+        color: var(--cad-primary);
+        transform: scale(1.05);
+    }
+
+    .mockup-note {
+        margin-top: 14px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--cad-text);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+        border: 1px dashed rgba(0, 67, 131, 0.2);
+    }
+
+    @media (max-width: 768px) {
+        .welcome-header {
+            padding: 30px 20px;
+        }
+
+        .welcome-header h1 {
+            font-size: 1.75rem;
+        }
+
+        .row.mb-5 > div {
+            margin-bottom: 20px;
+        }
+
+        .card-header-flex {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<!-- Encabezado de bienvenida -->
+<div class="welcome-header">
+    <h1>¡Hola, {{ user.username|default:"Usuario" }}! 👋</h1>
+    <p>Panel de control del Centro de Actividades Deportivas</p>
+</div>
+
+<div class="row mb-5">
+    <!-- Columna Calendario -->
+    <div class="col-md-12">
+        <div class="dashboard-card">
+            <div class="card-header-flex">
+                <h2>Tus próximas clases</h2>
+                <div class="header-actions">
+                    <span class="date-badge">10 - 16 Mayo</span>
+                    <a href="#" class="btn-cta-small">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span>Nueva Reserva</span>
+                    </a>
+                </div>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day-name">Dom</div>
+                <div class="calendar-day-name">Lun</div>
+                <div class="calendar-day-name">Mar</div>
+                <div class="calendar-day-name">Mié</div>
+                <div class="calendar-day-name">Jue</div>
+                <div class="calendar-day-name">Vie</div>
+                <div class="calendar-day-name">Sáb</div>
+                <div class="calendar-day current-month">10</div>
+                <div class="calendar-day current-month">11</div>
+                <div class="calendar-day current-month">12</div>
+                <div class="calendar-day current-month has-event">13
+                    <span class="activity-name"><i class="fa-solid fa-table-tennis-paddle-ball activity-icon"></i>Tenis</span>
+                    <span class="activity-time">13:00-14:00 hs</span>
+                    <span class="event-dot"></span>
+                </div>
+                <div class="calendar-day current-month today has-event" title="Hoy">14
+                    <span class="activity-name"><i class="fa-solid fa-futbol activity-icon"></i>Fútbol</span>
+                    <span class="activity-time">14:00-15:00 hs</span>
+                    <span class="event-dot"></span>
+                </div>
+                <div class="calendar-day current-month">15</div>
+                <div class="calendar-day current-month has-event">16
+                    <span class="activity-name"><i class="fa-solid fa-person-swimming activity-icon"></i>Natación</span>
+                    <span class="activity-time">18:00-19:00 hs</span>
+                    <span class="event-dot"></span>
+                </div>
+            </div>
+            <div class="mockup-note">Maqueta de interfaz generada con ayuda de IA. Diseño ilustrativo, no funcional.</div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

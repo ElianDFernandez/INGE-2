@@ -11,12 +11,12 @@
     <style>
         /* Paleta de Colores */
         :root {
-            --cad-blue: #004383;
-            --cad-dark-green: #146629;
-            --cad-light-green: #5DA515;
+            --cad-primary: #004383;
+            --cad-secondary: #5DA515;
+            --cad-hover: #146629;
             --cad-yellow: #FEBD00;
             --cad-gray: #D6D6D5;
-            --cad-white: #FDFDFD;
+            --cad-white: #ffffff;
             --cad-background: #F9F9F9;
             --cad-text: #121212;
         }
@@ -29,7 +29,7 @@
         }
 
         .navbar-cad {
-            background-color: var(--cad-blue) !important;
+            background-color: var(--cad-primary) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
@@ -46,7 +46,7 @@
         }
 
         .navbar-cad .nav-link {
-            color: rgba(253, 253, 253, 0.85);
+            color: var(--cad-white);
             font-weight: 400;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
@@ -61,18 +61,16 @@
         }
 
         .btn-main-cad {
-            background-color: var(--cad-dark-green);
+            background-color: var(--cad-secondary);
             color: var(--cad-white);
             font-weight: 500;
-            border: 1px solid var(--cad-dark-green);
             border-radius: 6px;
             padding: 0.4rem 1.2rem;
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
         
         .btn-main-cad:hover {
-            background-color: #105221;
-            border-color: #105221;
+            background-color: var(--cad-hover);
             color: var(--cad-white);
         }
 
@@ -93,7 +91,7 @@
 
         .dropdown-item:hover {
             background-color: #F0F0F0;
-            color: var(--cad-blue);
+            color: var(--cad-primary);
         }
         
         .dropdown-item i {
@@ -107,7 +105,7 @@
                 max-width: 75%;
             }
             .navbar-collapse {
-                background-color: var(--cad-blue);
+                background-color: var(--cad-primary);
                 padding: 1rem 0;
                 border-top: 1px solid rgba(255, 255, 255, 0.1);
                 margin-top: 10px;
@@ -150,21 +148,21 @@
                         {% if user.is_staff %}
                         <li class="nav-item">
                             <a class="nav-link" href="#">
-                                <i class="fa-solid fa-basketball me-1"></i> Actividades
+                                Actividades
                             </a>
                         </li>
                         {% endif %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link" href="#">
-                                <i class="fa-solid fa-users me-1"></i> Socios
+                                Socios
                             </a>
                         </li>
                         {% endif %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link" href="#">
-                                <i class="fa-solid fa-user-tie me-1"></i> Empleados
+                                Empleados
                             </a>
                         </li>
                         {% endif %}
