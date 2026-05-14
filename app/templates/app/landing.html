@@ -8,9 +8,10 @@
     .hero-section {
         background: linear-gradient(135deg, var(--cad-primary) 70%, var(--cad-secondary) 70%);
         color: var(--cad-white);
-        padding: 40px;
+        padding: 60px 0;
         border-radius: 12px;
         margin-bottom: 60px;
+        overflow: hidden;
     }
 
     .hero-section h1 {
@@ -121,21 +122,23 @@
 </style>
 
 <div class="hero-section mb-5">
-    <div class="row align-items-center g-3">
-        <div class="col-lg-6 text-center text-lg-start">
-            <h1>TU CLUB EN UN SOLO LUGAR</h1>
-            <p>Gestiona tus actividades de manera fácil, rápida y segura.</p>
-            <div class="d-flex gap-2 gap-lg-3 justify-content-center justify-content-lg-start flex-wrap">
-                <a href="{% url 'registro' %}" class="btn btn-light btn-lg-custom">
-                    <i class="fa-solid fa-user-plus me-2"></i>Empieza ahora!
-                </a>
-                <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg-custom">
-                    <i class="fa-solid fa-right-to-bracket me-2"></i>Iniciar sesión
-                </a>
+    <div class="container">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-6 text-center text-lg-start">
+                <h1>TU CLUB EN UN SOLO LUGAR</h1>
+                <p>Gestiona tus actividades de manera fácil, rápida y segura.</p>
+                <div class="d-flex gap-2 gap-lg-3 justify-content-center justify-content-lg-start flex-wrap">
+                    <a href="{% url 'registro' %}" class="btn btn-light btn-lg-custom">
+                        <i class="fa-solid fa-user-plus me-2"></i>Empieza ahora!
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg-custom">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Iniciar sesión
+                    </a>
+                </div>
             </div>
-        </div>
-        <div class="col-lg-6 text-center d-lg-block">
-            <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));">
+            <div class="col-lg-5 text-center offset-lg-1">
+                <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));">
+            </div>
         </div>
     </div>
 </div>
