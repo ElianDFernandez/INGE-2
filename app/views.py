@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
+from actividades.models import Actividad
+from django.utils import timezone
 
 # Create your views here.
 def test(request):
@@ -47,3 +49,13 @@ def perfil(request):
                     messages.error(request, error)
 
     return render(request, 'app/perfil.html')
+
+def home_view(request):
+    # Trae todas las actividades de la base de datos
+    actividades_reales = Actividad.objects.all() 
+    
+    # Se la pasamos al HTML
+    return render(request, 'app/home.html', {
+        'actividades': actividades_reales
+    })
+

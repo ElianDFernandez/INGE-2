@@ -1,8 +1,5 @@
 from django.shortcuts import render
-
-# Create your views here.
-
-from django.views.generic import ListView, CreateView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.urls import reverse_lazy
 from .models import Actividad
@@ -22,4 +19,16 @@ class ActividadCreateView(EmpleadoRequiredMixin, CreateView):
     model = Actividad
     form_class = ActividadForm
     template_name = 'actividades/actividad_form.html'
+    success_url = reverse_lazy('actividades_list')
+
+
+class ActividadUpdateView(EmpleadoRequiredMixin, UpdateView):
+    model = Actividad
+    form_class = ActividadForm
+    template_name = 'actividades/actividad_form.html' 
+    success_url = reverse_lazy('actividades_list')
+
+class ActividadDeleteView(EmpleadoRequiredMixin, DeleteView):
+    model = Actividad
+    template_name = 'actividades/actividad_confirm_delete.html'
     success_url = reverse_lazy('actividades_list')

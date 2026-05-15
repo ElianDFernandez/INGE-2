@@ -1,0 +1,24 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Eliminar Actividad - CAD{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-body text-center p-5">
+                <i class="fa-solid fa-triangle-exclamation text-danger fa-3x mb-3"></i>
+                <h3 class="text-danger">Eliminar Actividad</h3>
+                <p class="fs-5 mt-3">¿Estás seguro que querés eliminar la actividad <strong>"{{ object.get_nombre_display }}"</strong>?</p>
+                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'actividades_list' %}" class="btn btn-light border me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

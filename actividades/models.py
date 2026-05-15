@@ -1,34 +1,15 @@
 from django.db import models
 
-# Create your models here.
-
-from django.db import models
+# Definimos las 4 disciplinas permitidas
+DISCIPLINAS_CHOICES = [
+    ('VOLEY', 'Vóley'),
+    ('FUTBOL', 'Fútbol 5'),
+    ('BASQUET', 'Básquet'),
+    ('PADEL', 'Pádel'),
+]
 
 class Actividad(models.Model):
-    nombre = models.CharField(max_length=100)
-    descripcion = models.TextField()
-    precio = models.FloatField()
-    cupo_maximo = models.PositiveIntegerField()
+    nombre = models.CharField(max_length=20, choices=DISCIPLINAS_CHOICES)
 
     def __str__(self):
-        return self.nombre
-
-class Turno(models.Model):
-    DIAS_CHOICES = [
-        ('LUN', 'Lunes'),
-        ('MAR', 'Martes'),
-        ('MIE', 'Miércoles'),
-        ('JUE', 'Jueves'),
-        ('VIE', 'Viernes'),
-        ('SAB', 'Sábado'),
-        ('DOM', 'Domingo'),
-    ]
-    
-    actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE, related_name='turnos')
-    dia_semana = models.CharField(max_length=3, choices=DIAS_CHOICES)
-    horario_inicio = models.TimeField()
-    horario_fin = models.TimeField()
-    cupo_disponible = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f"{self.actividad.nombre} - {self.get_dia_semana_display()} ({self.horario_inicio})"
+        return self.get_nombre_display()
