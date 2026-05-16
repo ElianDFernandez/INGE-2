@@ -152,6 +152,13 @@
                             </a>
                         </li>
                         {% endif %}
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'turno_list' %}">
+                                Turnos
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link" href="#">

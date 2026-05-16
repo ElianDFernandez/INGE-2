@@ -10,5 +10,3 @@ class ActividadForm(forms.ModelForm):
             'nombre': forms.Select(attrs={'class': 'form-select'}),
         }
 
-   
-  
