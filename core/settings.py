@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app',
-    'actividades'
+    'actividades',
+    'empleados'
 ]
 
 MIDDLEWARE = [
@@ -147,5 +148,8 @@ EMAIL_PORT = 2525
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Contraseña por defecto para nuevos empleados
+EMPLEADO_DEFAULT_PASSWORD = 'empleado123'
 
 ALLOWED_HOSTS = ['*', '192.168.0.45']

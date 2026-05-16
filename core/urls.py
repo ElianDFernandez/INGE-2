@@ -4,9 +4,12 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # 1. Rutas específicas primero: Todo lo que empiece con /actividades/ va para allá
+    # Actividades
     path('actividades/', include('actividades.urls')), 
     
-    # 2. Ruta general al final: El resto (inicio, login, perfil) lo maneja la app principal
+    # Empleados
+    path('empleados/', include('empleados.urls')),
+
+    # App principal
     path('', include('app.urls')),
 ]
