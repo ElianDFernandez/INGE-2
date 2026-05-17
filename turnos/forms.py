@@ -23,9 +23,10 @@ class TurnoForm(forms.ModelForm):
 class ClaseForm(forms.ModelForm):
     class Meta:
         model = Clase
-        fields = ['dia', 'hora_inicio', 'hora_fin', 'costo', 'cupo_maximo']
+        fields = ['dia', 'espacio', 'hora_inicio', 'hora_fin', 'costo', 'cupo_maximo']
         widgets = {
             'dia': forms.Select(attrs={'class': 'form-select'}),
+            'espacio': forms.Select(attrs={'class': 'form-select'}),
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'costo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number', 'step': '0.01'}),
