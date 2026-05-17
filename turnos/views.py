@@ -18,7 +18,12 @@ def placeholder(request):
 def create_turno(request):
     if request.method == 'POST':
         turno_form = TurnoForm(request.POST)
-        clase_form = ClaseForm(request.POST)
+       
+        actividad = None
+        if(turno_form.is_valid()):
+            actividad = turno_form.cleaned_data['actividad']
+
+        clase_form = ClaseForm(request.POST, actividad=actividad)
 
         if (turno_form.is_valid() and clase_form.is_valid()):
             turno = turno_form.save()
@@ -73,6 +78,11 @@ class ClaseUpdateView(EmpleadoRequiredMixin, UpdateView):
     model = Clase
     form_class = ClaseForm
     template_name = 'clases/clase_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['actividad'] = self.object.turno.actividad
+        return kwargs
 
     def get_success_url(self):
         return reverse_lazy(
