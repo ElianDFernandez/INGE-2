@@ -40,5 +40,15 @@ class ClaseForm(forms.ModelForm):
         
         if hora_inicio and hora_fin and hora_inicio >= hora_fin:
             raise forms.ValidationError('La hora de inicio debe ser anterior a la hora de fin.')
-    
+        
+        espacio = cleaned_data.get('espacio')
+        dia = cleaned_data.get('dia')
+
+        if espacio and dia and hora_inicio and hora_fin:
+            clases = Clase.objects.filter(espacio=espacio, dia=dia).exclude(pk=self.instance.pk)
+
+            for clase in clases:
+                if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
+                    raise forms.ValidationError('Otra clase ya está programada en este horario.')
+
         return cleaned_data
