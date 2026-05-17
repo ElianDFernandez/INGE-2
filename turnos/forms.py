@@ -1,6 +1,16 @@
 from django import forms
 from .models import Turno, Clase
 
+
+class CreateTurnoForm(forms.ModelForm):
+    class Meta:
+        model = Turno
+        fields = ['nombre', 'actividad']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'actividad': forms.Select(attrs={'class': 'form-select'}),
+        }
+    
 class TurnoForm(forms.ModelForm):
     class Meta:
         model = Turno
@@ -13,9 +23,9 @@ class TurnoForm(forms.ModelForm):
 class ClaseForm(forms.ModelForm):
     class Meta:
         model = Clase
-        fields = ['turno', 'hora_inicio', 'hora_fin', 'costo', 'cupo_maximo']
+        fields = ['dia', 'hora_inicio', 'hora_fin', 'costo', 'cupo_maximo']
         widgets = {
-            'turno': forms.Select(attrs={'class': 'form-select'}),
+            'dia': forms.Select(attrs={'class': 'form-select'}),
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'costo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number', 'step': '0.01'}),

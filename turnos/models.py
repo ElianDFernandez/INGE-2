@@ -1,7 +1,6 @@
 from django.db import models
 from actividades.models import Actividad
 
-
 class DiaSemana(models.TextChoices):
     LUNES = 'LUNES', 'Lunes'
     MARTES = 'MARTES', 'Martes'
