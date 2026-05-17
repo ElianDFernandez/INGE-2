@@ -1,0 +1,51 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Crear Turno{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">
+        <i class="fa-solid fa-calendar-days me-2"></i>
+        Crear Turno
+    </h2>
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        <!-- DATOS DEL TURNO -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header">
+                Datos del Turno
+            </div>
+
+            <div class="card-body">
+                {{ turno_form.as_p }}
+            </div>
+        </div>
+
+        <!-- DATOS DE LA CLASE -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header">
+                Clase Asociada
+            </div>
+
+            <div class="card-body">
+                {{ clase_form.as_p }}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-main-cad">
+                Guardar Turno
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

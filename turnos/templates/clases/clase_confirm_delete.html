@@ -1,0 +1,24 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Eliminar Clase - CAD{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-body text-center p-5">
+                <i class="fa-solid fa-triangle-exclamation text-danger fa-3x mb-3"></i>
+                <h3 class="text-danger">Eliminar Clase</h3>
+                <p class="fs-5 mt-3">¿Estás seguro que querés eliminar la clase?</p>
+                <p class="text-muted small">Esto eliminará todas sus reservas asociadas.</p>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'turno_list' %}" class="btn btn-light border me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

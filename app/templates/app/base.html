@@ -98,6 +98,15 @@
             width: 20px;
             text-align: center;
         }
+        .errorlist {
+            color: #dc3545;
+            margin: 0.5rem 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
 
         @media (max-width: 991px) {
             .navbar-brand {
@@ -149,6 +158,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'actividades_list' %}">
                                 Actividades
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'turno_list' %}">
+                                Turnos
                             </a>
                         </li>
                         {% endif %}
