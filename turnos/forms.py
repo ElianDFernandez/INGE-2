@@ -30,5 +30,15 @@ class ClaseForm(forms.ModelForm):
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'costo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number', 'step': '0.01'}),
-            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number'}),
+            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number'},),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        hora_inicio = cleaned_data.get('hora_inicio')
+        hora_fin = cleaned_data.get('hora_fin')
+        
+        if hora_inicio and hora_fin and hora_inicio >= hora_fin:
+            raise forms.ValidationError('La hora de inicio debe ser anterior a la hora de fin.')
+    
+        return cleaned_data

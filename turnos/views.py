@@ -20,7 +20,7 @@ def create_turno(request):
         turno_form = TurnoForm(request.POST)
         clase_form = ClaseForm(request.POST)
 
-        if turno_form.is_valid() and clase_form.is_valid():
+        if (turno_form.is_valid() and clase_form.is_valid()):
             turno = turno_form.save()
             clase = clase_form.save(commit=False)
 
@@ -28,10 +28,13 @@ def create_turno(request):
             clase.save()
 
             return redirect('turno_list')
-    
+    else:
+        turno_form = TurnoForm()
+        clase_form = ClaseForm()
+
     return render(request, 'create_turno.html', {
-        'turno_form': TurnoForm(),
-        'clase_form': ClaseForm()
+        'turno_form': turno_form,
+        'clase_form': clase_form
     })
 
 class TurnoListView(EmpleadoRequiredMixin, ListView):
