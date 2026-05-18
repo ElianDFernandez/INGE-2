@@ -2,7 +2,6 @@ from django.db import models
 from actividades.models import Actividad
 from django.core.validators import MinValueValidator
 
-
 class DiaSemana(models.TextChoices):
     LUNES = 'LUNES', 'Lunes'
     MARTES = 'MARTES', 'Martes'
@@ -34,4 +33,27 @@ class Clase(models.Model):
     hora_fin = models.TimeField()
     costo = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)])
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    
+    def dia_numero(self): # usado para generar las clases programadas
+        dias = {
+            'LUNES': 0,
+            'MARTES': 1,
+            'MIERCOLES': 2,
+            'JUEVES': 3,
+            'VIERNES': 4,
+            'SABADO': 5,
+            'DOMINGO': 6,
+        }
+        return dias[self.dia]
 
+
+class ClaseProgramada(models.Model):
+    clase = models.ForeignKey(Clase, on_delete=models.CASCADE)
+    fecha = models.DateField()
+
+    def cupo_actual(self):
+        # estado está hardcodeado y no lo saco del choices de reservas pq los import quedan circular
+        return self.reserva_set.filter(estado='ACTIVA').count()
+
+    class Meta:
+        unique_together = ('clase', 'fecha')
