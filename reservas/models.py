@@ -4,6 +4,8 @@ from turnos.models import ClaseProgramada
 class EstadoReserva(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
     CANCELADA = 'CANCELADA', 'Cancelada'
+    PRESENTE = 'PRESENTE', 'Presente'
+    AUSENTE = 'AUSENTE', 'Ausente'
 
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'
@@ -18,6 +20,6 @@ class Reserva(models.Model):
     metodo_asistencia = models.CharField(max_length=20, choices=MetodoAsistencia.choices, null=True, blank=True, default=None)
 
     class Meta:
-        unique_together = ('user', 'clase_programada')
+        ordering = ['estado', '-fecha_reserva']
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'

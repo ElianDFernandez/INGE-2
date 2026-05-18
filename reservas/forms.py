@@ -24,3 +24,16 @@ class ReservaForm(forms.ModelForm):
             raise forms.ValidationError('No hay cupos disponibles para esta clase.')
 
         return cleaned_data
+    
+class ReservaCancelForm(forms.Form):
+    class meta: 
+        model = Reserva
+        fields = []
+
+        def clean(self):
+            cleaned_data = super().clean()
+
+            if self.instance.estado != EstadoReserva.ACTIVA:
+                raise forms.ValidationError('La reserva ya está cancelada.')
+            
+            return cleaned_data

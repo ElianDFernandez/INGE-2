@@ -56,4 +56,5 @@ class ClaseProgramada(models.Model):
         return self.reserva_set.filter(estado='ACTIVA').count()
 
     class Meta:
+        ordering = ['fecha', 'clase__hora_inicio']
         unique_together = ('clase', 'fecha')
