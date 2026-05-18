@@ -1,0 +1,138 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Clases Disponibles{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+
+    <h2 class="mb-4" style="color: var(--cad-primary);">
+        Clases Disponibles
+    </h2>
+
+    {% for actividad in actividades %}
+
+    <!-- ACTIVIDAD -->
+    <div class="card shadow-sm border-0 mb-4">
+
+        <!-- header desplegable -->
+        <div class="card-body">
+
+            <button
+                class="btn p-0 border-0 bg-transparent text-start w-100"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#actividad-{{ actividad.pk }}"
+                aria-expanded="false">
+
+                <i class="fa-solid fa-chevron-down me-2"></i>
+
+                <span class="fw-bold fs-4">
+                    {{ actividad.nombre }}
+                </span>
+
+            </button>
+
+        </div>
+
+        <!-- clases -->
+        <div class="collapse" id="actividad-{{ actividad.pk }}">
+
+            <div class="card-body pt-0">
+
+                <table class="table table-hover mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th class="ps-4">Fecha</th>
+                            <th>Horario</th>
+                            <th>Espacio</th>
+                            <th>Costo</th>
+                            <th>Cupo</th>
+                            <th class="text-end pe-4"></th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for turno in actividad.turno_set.all %}
+                            {% for clase in turno.clase_set.all %}
+                                {% for clase_programada in clase.claseprogramada_set.all %}
+
+                                <tr>
+
+                                    <td class="ps-4">
+                                        {{ clase_programada.fecha }}
+                                    </td>
+
+                                    <td>
+                                        {{ clase.hora_inicio }} - {{ clase.hora_fin }}
+                                    </td>
+
+                                    <td>
+                                        {{ clase.get_espacio_display }}
+                                    </td>
+
+                                    <td>
+                                        ${{ clase.costo }}
+                                    </td>
+
+                                    <td>
+                                        {{ clase_programada.cupo_actual }}
+                                        /
+                                        {{ clase.cupo_maximo }}
+                                    </td>
+
+                                    <td class="text-end pe-4">
+
+                                        <a href="{% url 'reserva_confirm' clase_programada.pk %}"
+                                           class="btn btn-sm btn-main-cad">
+
+                                            <i class="fa-solid fa-plus me-1"></i>
+                                            Reservar
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+                            {% endfor %}
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="6"
+                                class="text-center py-4 text-muted">
+
+                                No hay clases disponibles para esta actividad.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-4 text-muted">
+            No hay actividades disponibles actualmente.
+        </div>
+    </div>
+
+    {% endfor %}
+
+</div>
+{% endblock %}

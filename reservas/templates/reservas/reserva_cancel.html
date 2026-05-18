@@ -1,0 +1,108 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Cancelar Reserva{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center mt-4">
+
+    <div class="col-md-7">
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-header bg-white">
+
+                <h3 style="color: var(--cad-primary);">
+                    Cancelar Reserva
+                </h3>
+
+            </div>
+
+            <div class="card-body">
+
+                <p class="mb-4">
+                    ¿Estás seguro de que querés cancelar esta reserva?
+                </p>
+
+                <table class="table">
+
+                    <tbody>
+
+                        <tr>
+                            <th>Actividad</th>
+                            <td>
+                                {{ reserva.clase_programada.clase.turno.actividad.nombre }}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Fecha</th>
+                            <td>
+                                {{ reserva.clase_programada.fecha }}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Día</th>
+                            <td>
+                                {{ reserva.clase_programada.clase.get_dia_display }}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Horario</th>
+                            <td>
+                                {{ reserva.clase_programada.clase.hora_inicio }}
+                                -
+                                {{ reserva.clase_programada.clase.hora_fin }}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Espacio</th>
+                            <td>
+                                {{ reserva.clase_programada.clase.get_espacio_display }}
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    {{ form.as_p }}
+
+                    <div class="d-flex justify-content-end mt-4">
+
+                        <a href="{% url 'reserva_list' %}"
+                           class="btn btn-light border me-2">
+
+                            Volver
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-danger">
+
+                            Confirmar Cancelación
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
