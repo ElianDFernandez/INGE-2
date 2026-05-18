@@ -17,7 +17,7 @@ def placeholder(request):
 # Crea al turno con su clase asociada
 def create_turno(request):
     if request.method == 'POST':
-        turno_form = TurnoForm(request.POST)
+        turno_form = TurnoForm(request.POST, user=request.user)
        
         actividad = None
         if(turno_form.is_valid()):
@@ -34,7 +34,7 @@ def create_turno(request):
 
             return redirect('turno_list')
     else:
-        turno_form = TurnoForm()
+        turno_form = TurnoForm(user=request.user)
         clase_form = ClaseForm()
 
     return render(request, 'create_turno.html', {
@@ -52,6 +52,10 @@ class TurnoUpdateView(EmpleadoRequiredMixin, UpdateView):
     form_class = TurnoForm
     template_name = 'turnos/turno_edit.html'
     success_url = reverse_lazy('turno_list')
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user # Le pasamos el usuario actual al form
+        return kwargs
 
 class TurnoDeleteView(EmpleadoRequiredMixin, DeleteView):
     model = Turno

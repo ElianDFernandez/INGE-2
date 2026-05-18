@@ -1,7 +1,7 @@
 from django import forms
 
 from actividades.models import Actividad
-from .models import Turno, Clase
+from .models import Turno, Clase, Actividad
 
 
 class CreateTurnoForm(forms.ModelForm):
@@ -41,6 +41,23 @@ class TurnoForm(forms.ModelForm):
                 if (clase.hora_inicio < clase_aux.hora_fin and clase.hora_fin > clase_aux.hora_inicio):
                     raise forms.ValidationError('La clase se superpone con otra clase ya existente de la actividad seleccionada.')
         return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        # 1. Capturo al usuario que nos manda la vista
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # 2. Lógica de permisos para el campo 'actividad'
+        if self.user:
+            if self.user.is_superuser:
+                # El superusuario (Administrador) ve absolutamente todas las actividades
+                self.fields['actividad'].queryset = Actividad.objects.all()
+            else:
+                # El Empleado normal solo ve las actividades vinculadas a él
+                # Uso la relación inversa de la tabla intermedia EmpleadoActividad
+                self.fields['actividad'].queryset = Actividad.objects.filter(
+                    empleadoactividad__empleado=self.user
+                )
 
 
 class ClaseForm(forms.ModelForm):
