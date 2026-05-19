@@ -281,6 +281,7 @@
 </div>
 
 <div class="row mb-5">
+    {% if not user.is_staff and not user.is_superuser %}
     <!-- Columna Calendario -->
     <div class="col-md-12">
         <div class="dashboard-card">
@@ -371,5 +372,6 @@
             <div class="mockup-note">Maqueta de interfaz generada con ayuda de IA. Diseño ilustrativo, no funcional.</div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
