@@ -18,7 +18,20 @@ def clases_disponibles(request):
                 ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha) 
     
     actividades = Actividad.objects.prefetch_related('turno_set__clase_set')
-    return render(request, 'clases_disponibles.html', {'actividades': actividades})
+    # --- NUEVA LÓGICA PARA EL BOTÓN ---
+    clases_reservadas_ids = []
+    if request.user.is_authenticated:
+        # Buscamos las reservas activas de este usuario y sacamos solo los IDs de las clases
+        clases_reservadas_ids = Reserva.objects.filter(
+            user=request.user
+        ).exclude(
+            estado=EstadoReserva.CANCELADA
+        ).values_list('clase_programada_id', flat=True)
+
+    return render(request, 'clases_disponibles.html', {
+        'actividades': actividades,
+        'clases_reservadas_ids': list(clases_reservadas_ids) # Lo pasamos al HTML
+    })
 
 @login_required
 def reserva_confirm(request, clase_programada_pk):
