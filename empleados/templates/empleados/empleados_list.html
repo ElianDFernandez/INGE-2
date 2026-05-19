@@ -45,7 +45,12 @@
 							<div class="modal-content">
 								<div class="modal-header">
                                     <div class="d-flex flex-column">
-                                        <h5 class="modal-title">Actividades de {{ empleado.username }}</h5>
+										<h5 class="modal-title">
+											Actividades de
+											<span class="text-truncate d-inline-block align-bottom" style="max-width: 240px;">
+												{{ empleado.username }}
+											</span>
+										</h5>
                                         <p class="text-muted small mb-0">Selecciona las actividades que puede gestionar este empleado.</p>
                                     </div>
 									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
