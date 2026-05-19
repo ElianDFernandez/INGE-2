@@ -7,6 +7,5 @@ class ActividadForm(forms.ModelForm):
         model = Actividad
         fields = ['nombre']
         widgets = {
-            'nombre': forms.Select(attrs={'class': 'form-select'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
         }
-
