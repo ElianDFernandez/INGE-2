@@ -5,11 +5,23 @@ from django.urls import reverse_lazy
 from django.http import HttpResponse
 from .models import Clase, Turno
 from .forms import TurnoForm, ClaseForm
+from empleados.models import EmpleadoActividad
 
 # Esta clase verifica que el usuario sea empleado (is_staff) o administrador (is_superuser)
 class EmpleadoRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and (self.request.user.is_staff or self.request.user.is_superuser)
+
+
+class TurnoActividadRequiredMixin(EmpleadoRequiredMixin):
+    def test_func(self):
+        if not super().test_func():
+            return False
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        turno = self.get_object()
+        return EmpleadoActividad.objects.filter(empleado=user, actividad=turno.actividad).exists()
 
 def placeholder(request):
     return HttpResponse("Página en construcción")
@@ -44,16 +56,27 @@ def create_turno(request):
 
 class TurnoListView(EmpleadoRequiredMixin, ListView):
     model = Turno
-    template_name = 'turnos/turno_list.html'
-    context_object_name = 'turnos'
+    template_name = "turnos/turno_list.html"
+    context_object_name = "turnos"
 
-class TurnoUpdateView(EmpleadoRequiredMixin, UpdateView):
+    def get_queryset(self):
+        return super().get_queryset().select_related("actividad")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["actividades_asignadas_ids"] = set(
+            EmpleadoActividad.objects.filter(empleado=self.request.user)
+            .values_list("actividad_id", flat=True)
+        )
+        return context
+
+class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
     model = Turno
     form_class = TurnoForm
     template_name = 'turnos/turno_edit.html'
     success_url = reverse_lazy('turno_list')
 
-class TurnoDeleteView(EmpleadoRequiredMixin, DeleteView):
+class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     model = Turno
     template_name = 'turnos/turno_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
