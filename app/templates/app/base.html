@@ -98,6 +98,15 @@
             width: 20px;
             text-align: center;
         }
+        .errorlist {
+            color: #dc3545;
+            margin: 0.5rem 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
 
         @media (max-width: 991px) {
             .navbar-brand {
@@ -152,6 +161,13 @@
                             </a>
                         </li>
                         {% endif %}
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'turno_list' %}">
+                                Turnos
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link" href="#">
@@ -163,6 +179,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'empleados_list' %}">
                                 Empleados
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if not user.is_staff and not user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reserva_list' %}">
+                                Mis Reservas
                             </a>
                         </li>
                         {% endif %}

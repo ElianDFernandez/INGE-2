@@ -3,12 +3,10 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
-    # Actividades
     path('actividades/', include('actividades.urls')), 
-    
-    # Empleados
+    path('turnos/', include('turnos.urls')),
     path('empleados/', include('empleados.urls')),
+    path('reservas/', include('reservas.urls')),
 
     # App principal
     path('', include('app.urls')),
