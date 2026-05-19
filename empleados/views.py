@@ -16,6 +16,9 @@ class EmpleadosListView(ListView):
     template_name = 'empleados/empleados_list.html'
     context_object_name = 'empleados'
 
+    def get_queryset(self):
+        return super().get_queryset().filter(is_superuser=False)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         actividades = list(Actividad.objects.all())
