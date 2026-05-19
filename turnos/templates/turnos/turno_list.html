@@ -59,7 +59,7 @@
                         <i class="fa-solid fa-chevron-down me-2"></i>
 
                         <span class="fw-bold fs-5">
-                            {{ turno.nombre }}
+                            {{ turno.nombre }} - {{ turno.actividad.get_nombre_display }}
                         </span>
 
                     </button>
@@ -68,6 +68,7 @@
 
                 <!-- acciones -->
                 <div class="col-4 text-end">
+                    {% if user.is_superuser or turno.actividad_id in actividades_asignadas_ids %}
                     <a href="{% url 'turno_edit' turno.pk %}"
                        class="btn btn-sm btn-outline-secondary"
                        title="Editar Turno">
@@ -79,6 +80,7 @@
                        title="Eliminar Turno">
                         <i class="fa-solid fa-trash"></i>
                     </a>
+                    {% endif %}
 
                 </div>
 
