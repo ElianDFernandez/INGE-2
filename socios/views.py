@@ -21,7 +21,7 @@ def socio_list(request):
     # Traigo los usuarios comunes (Socios), excluyendo staff y admins
     socios = User.objects.filter(is_staff=False, is_superuser=False).order_by('username')
     
-    # Si se usa el buscador, filtramos por nombre de usuario o email
+    # Si se usa el buscador, filtra por nombre de usuario o email
     if q:
         socios = socios.filter(username__icontains=q) | socios.filter(email__icontains=q)
         
@@ -29,11 +29,11 @@ def socio_list(request):
         'socios': socios,
         'q': q
     })
-
+# TEMPORAL: vista de detalle de socio con sus reservas (después la vamos a mejorar)
 @login_required
 @user_passes_test(es_empleado_o_admin, login_url='home')
 def socio_reservas(request, socio_id):
-    # Por ahora solo traemos al socio, después le agregamos las reservas de verdad
+    # Por ahora solo traigo al socio, después le agregamos las reservas de verdad
     socio = get_object_or_404(User, id=socio_id)
     return render(request, 'socios/socio_reservas.html', {'socio': socio})
 
