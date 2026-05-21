@@ -1,0 +1,57 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Buscador de Socios - CAD{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <h2 style="color: var(--cad-primary);" class="mb-4">
+         Socios
+    </h2>
+
+    <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card-body">
+            <form method="GET" class="row g-2">
+                <div class="col-md-9">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar por nombre de usuario o correo electrónico..." value="{{ q }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-main-cad w-100">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i>Buscar Socio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead style="background-color: var(--cad-primary); color: white;">
+                    <tr>
+                        <th class="ps-4">Nombre de Usuario</th>
+                        <th>Email</th>
+                        <th class="pe-4 text-end">Reservas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for socio in socios %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-secondary">{{ socio.username }}</td>
+                        <td>{{ socio.email|default:"Sin registrar" }}</td>
+                        <td class="pe-4 text-end">
+                            <a href="{% url 'socio_reservas' socio.id %}" class="btn btn-sm btn-outline-primary" title="Inspeccionar Reservas">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-muted">No se encontraron socios con esos criterios de búsqueda.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

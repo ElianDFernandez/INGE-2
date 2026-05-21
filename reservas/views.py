@@ -3,11 +3,15 @@ from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 
+from django.contrib import messages
+from django.urls import reverse
+
 from .models import Reserva, EstadoReserva
 from .forms import ReservaCancelForm, ReservaForm
 
 from actividades.models import Actividad
 from turnos.models import Clase, ClaseProgramada
+
 
 def clases_disponibles(request):
     for clase in Clase.objects.all():
@@ -74,3 +78,5 @@ def reserva_cancel(request, reserva_pk):
         form = ReservaCancelForm()
 
     return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
+
+

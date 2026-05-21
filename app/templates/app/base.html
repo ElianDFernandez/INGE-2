@@ -168,9 +168,9 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if user.is_superuser %}
+                        {% if user.is_staff or user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{% url 'socio_list' %}">
                                 Socios
                             </a>
                         </li>
