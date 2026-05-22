@@ -1,0 +1,136 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Editar Turno{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+
+        <!-- CARD TURNO -->
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <h4 class="card-title mt-2">
+                        <i class="fa-solid fa-calendar-days me-2"></i>
+                        Editar Turno
+                    </h4>
+                </div>
+
+                <!-- FORMULARIO TURNO -->
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    {{ form.as_p }}
+
+                    <div class="d-flex justify-content-between mt-4">
+
+                        <a href="{% url 'turno_list' %}"
+                           class="btn btn-outline-secondary">
+
+                            <i class="fa-solid fa-arrow-left me-2"></i>
+                            Atrás
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-main-cad">
+
+                            Guardar
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+        <!-- CARD CLASES -->
+        <div class="card shadow-sm">
+
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-clock me-2"></i>
+                    Clases asociadas
+                </h5>
+            </div>
+
+            <div class="card-body p-0">
+
+                <table class="table table-hover mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Día</th>
+                            <th>Horario</th>
+                            <th>Espacio</th>
+                            <th>Costo</th>
+                            <th>Cupo</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for clase in turno.clase_set.all %}
+
+                        <tr>
+
+                            <td>
+                                {{ clase.get_dia_display }}
+                            </td>
+
+                            <td>
+                                {{ clase.hora_inicio }} - {{ clase.hora_fin }}
+                            </td>
+
+                            <td>
+                                {{ clase.get_espacio_display }}
+                            </td>
+
+                            <td>
+                                ${{ clase.costo }}
+                            </td>
+
+                            <td>
+                                {{ clase.cupo_maximo }}
+                            </td>
+
+                            <td class="text-end pe-4">
+
+                                <a href="{% url 'clase_edit' clase.pk %}"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   title="Editar clase">
+
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+                            <td colspan="6"
+                                class="text-center py-4 text-muted">
+
+                                Este turno no tiene clases asociadas.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+```

@@ -1,0 +1,237 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Centro de Gestión{% endblock %}</title>
+    <link rel="icon" href="{% static 'icon.svg' %}" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Paleta de Colores */
+        :root {
+            --cad-primary: #004383;
+            --cad-secondary: #5DA515;
+            --cad-hover: #146629;
+            --cad-yellow: #FEBD00;
+            --cad-gray: #D6D6D5;
+            --cad-white: #ffffff;
+            --cad-background: #F9F9F9;
+            --cad-text: #121212;
+        }
+
+        body { 
+            background-color: var(--cad-background); 
+            padding-top: 90px;
+            color: var(--cad-text);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .navbar-cad {
+            background-color: var(--cad-primary) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .navbar-cad .navbar-brand {
+            color: var(--cad-white);
+            letter-spacing: 0.5px;
+            margin-right: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .navbar-cad .navbar-brand:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .navbar-cad .nav-link {
+            color: var(--cad-white);
+            font-weight: 400;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            border-radius: 4px;
+        }
+        
+        .navbar-cad .nav-link:hover, 
+        .navbar-cad .nav-link:focus {
+            color: var(--cad-white);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-main-cad {
+            background-color: var(--cad-secondary);
+            color: var(--cad-white);
+            font-weight: 500;
+            border-radius: 6px;
+            padding: 0.4rem 1.2rem;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        
+        .btn-main-cad:hover {
+            background-color: var(--cad-hover);
+            color: var(--cad-white);
+        }
+
+        .dropdown-menu {
+            background-color: var(--cad-white);
+            border: 1px solid var(--cad-gray);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 0.5rem 0;
+        }
+        
+        .dropdown-item {
+            color: var(--cad-text);
+            font-weight: 400;
+            padding: 0.5rem 1.5rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #F0F0F0;
+            color: var(--cad-primary);
+        }
+        
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+        }
+        .errorlist {
+            color: #dc3545;
+            margin: 0.5rem 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 991px) {
+            .navbar-brand {
+                white-space: normal;
+                max-width: 75%;
+            }
+            .navbar-collapse {
+                background-color: var(--cad-primary);
+                padding: 1rem 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                margin-top: 10px;
+            }
+            .navbar-collapse .navbar-nav {
+                width: 100%;
+                align-items: stretch;
+            }
+            .navbar-nav .nav-link {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                width: 100%;
+            }
+            .navbar-cad .btn-main-cad {
+                width: 100%;
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-cad fixed-top">
+        <div class="container">
+            <!-- Logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'landing' %}">
+                {% if user.is_authenticated %}
+                    <img src="{% static 'logo.svg' %}" alt="Logo Institucional" height="50" class="d-inline-block align-text-top me-2">
+                {% else %}
+                    <span class="fw-semibold fs-5">Centro de Actividades</span>
+                {% endif %}
+            </a>
+            <!-- Botón Hamburguesa -->
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- Menú Colapsable -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'actividades_list' %}">
+                                Actividades
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'turno_list' %}">
+                                Turnos
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                Socios
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'empleados_list' %}">
+                                Empleados
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'mis_inscripciones' %}">
+                                Mis Inscripciones
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav align-items-lg-center">
+                    {% if not user.is_authenticated %}
+                        <li class="nav-item mb-2 mb-lg-0 me-lg-3 w-100 w-lg-auto">
+                            <a class="nav-link text-center text-lg-start" href="{% url 'login' %}">Iniciar Sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <div class="d-grid d-lg-block w-100">
+                                <a class="btn btn-main-cad" href="{% url 'registro' %}">Registrarse</a>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item dropdown mt-2 mt-lg-0">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-user me-1"></i>
+                                <span>{{ user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'perfil' %}">
+                                        <i class="fa-solid fa-user-gear me-1"></i>Mi Perfil
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Cerrar sesión
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

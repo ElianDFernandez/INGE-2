@@ -1,0 +1,97 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Gestión de Empleados - CAD{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+	<div class="d-flex justify-content-between align-items-center mb-4">
+		<h2 style="color: var(--cad-primary);">Empleados</h2>
+        <a href="{% url 'empleados_create' %}" class="btn btn-main-cad">
+            <i class="fa-solid fa-plus me-2"></i>Nuevo
+        </a>
+	</div>
+
+	<div class="card shadow-sm border-0">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0 align-middle">
+				<thead style="background-color: var(--cad-primary); color: white;">
+					<tr>
+						<th class="ps-4">Usuario</th>
+						<th class="d-none d-md-table-cell">Email</th>
+						<th class="pe-4 text-end">Acciones</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for empleado in empleados %}
+					<tr>
+						<td class="ps-4 fw-bold">
+							<span class="text-truncate d-inline-block" style="max-width: 180px;">{{ empleado.username }}</span>
+						</td>
+						<td class="d-none d-md-table-cell">{{ empleado.email }}</td>
+						<td class="pe-4 text-end">
+							<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-actividades-{{ empleado.id }}" title="Actividades">
+								<i class="fa-solid fa-list-check"></i>
+							</button>
+							<a href="{% url 'empleados_edit' empleado.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                            {% if not empleado.is_superuser %} 
+							    <a href="{% url 'empleados_delete' empleado.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                            {% endif %}
+						</td>
+					</tr>
+
+					<div class="modal fade" id="modal-actividades-{{ empleado.id }}" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered modal-lg">
+							<div class="modal-content">
+								<div class="modal-header">
+                                    <div class="d-flex flex-column">
+                                        <h5 class="modal-title">Actividades de {{ empleado.username }}</h5>
+                                        <p class="text-muted small mb-0">Selecciona las actividades que puede gestionar este empleado.</p>
+                                    </div>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+								</div>
+								<form method="post" action="{% url 'empleados_actividades' empleado.pk %}">
+									{% csrf_token %}
+									<div class="modal-body">
+										<div class="row g-2">
+											{% for actividad in actividades %}
+											<div class="col-12 col-md-6">
+												<div class="form-check">
+													<input
+														class="form-check-input"
+														type="checkbox"
+														name="actividad_ids"
+														value="{{ actividad.id }}"
+														id="actividad-{{ empleado.id }}-{{ actividad.id }}"
+														{% if actividad.id in empleado.actividades_ids %}checked{% endif %}
+													>
+													<label class="form-check-label" for="actividad-{{ empleado.id }}-{{ actividad.id }}">
+														{{ actividad.get_nombre_display|default:actividad.nombre }}
+													</label>
+												</div>
+											</div>
+											{% empty %}
+											<div class="col-12 text-muted">No hay actividades disponibles.</div>
+											{% endfor %}
+										</div>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+										<button type="submit" class="btn btn-main-cad">Guardar</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					{% empty %}
+					<tr>
+						<td colspan="3" class="text-center py-4 text-muted">No hay empleados registrados todavía.</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

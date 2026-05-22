@@ -1,16 +1,16 @@
 <div align="center">
-  <img src="/assets/Logo.png" alt="Logo Syncro" width="200" />
-
+  <img src="/assets/Logo.png" alt="Logo" style="max-width: 100%; height: auto; width: 450px; margin-bottom: 20px;" />
+  
   <h1>Proyecto ING-2</h1>
   <p><strong>Sistema de Gestión para Centros de Actividades</strong></p>
 
-  <p>
+  <p style="margin: 15px 0;">
     <img src="https://img.shields.io/badge/estado-en%20desarrollo-yellow?style=flat-square" />
     <img src="https://img.shields.io/badge/licencia-académico-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/universidad-UNLP-orange?style=flat-square" />
   </p>
 
-  <p><strong>Desarrollado por el equipo SYNCRO</strong></p>
+  <p style="margin-top: 20px;"><strong>Desarrollado por el equipo SYNCRO</strong></p>
 </div>
 
 ---
@@ -42,12 +42,10 @@ La aplicación tiene como objetivo facilitar la administración de socios, la re
 
 ## 🛠 Tecnologías
 
-> *(En definición)*
-
-- Backend: —  
-- Frontend: —  
-- Base de datos: —  
-- Infraestructura: —  
+- Backend: Django
+- Frontend: Django Templates
+- Base de datos: SQLite
+- Infraestructura: Docker
 
 ---
 
@@ -57,3 +55,26 @@ La aplicación tiene como objetivo facilitar la administración de socios, la re
 git clone https://github.com/ElianDFernandez/INGE-2.git
 cd INGE-2
 ```
+
+**Docker-Django**
+```bash
+docker compose up -d --build
+```
+
+**Base de datos**
+```bash
+docker compose exec web python manage.py migrate
+```
+
+**Comandos utiles**
+```bash
+docker compose exec web python manage.py --help
+```
+
+**(Opcional) Para que Windows cree un "entorno virutal" para que el editor de código no marque errores**
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
+Luego, Ctrl + Shift + P -> Python: Select Interpreter -> venv\Scripts\python.exe

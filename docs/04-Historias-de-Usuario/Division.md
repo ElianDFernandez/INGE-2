@@ -29,14 +29,14 @@
 - RF-22: Confirmación de asistencia de lista espera.
 
 ## Isabella
-- RF-23: Anotarse en lista de espera.
-- RF-24: Cancelar reservas.
-- RF-25: Registrar medio de pago.
-- RF-26: Eliminar medio de pago registrado.
-- RF-27: Abonar seña de reserva. 
-- RF-28: Registrar cobro manual.
-- RF-29: Registrar pago.
-- RF-30: Registrar asistencia mediante escaneo de código QR.
+- RF-20: Anotarse en lista de espera.
+- RF-21: Cancelar reservas.
+- RF-22: Registrar medio de pago.
+- RF-23: Abonar seña de reserva. 
+- RF-24: Registrar cobro manual.
+- RF-25: Registrar pago.
+- RF-26: Registrar asistencia mediante escaneo de código QR.
+- RF-28: Eliminar medio de pago. 
 
 ## Vladimir
 - RF-31: Consultar panel de métricas.

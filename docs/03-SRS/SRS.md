@@ -10,18 +10,19 @@ Este documento esta dirigido a Laura y Jose, y al equipo de desarrolladores del 
 
 ### b. Definiciones, acrónimos y abreviaturas
 
--**ABONADO** Socio del centro que tiene un turno fijo asignado en una actividad específica cada mes, con beneficios como descuentos y prioridad en reservas.
--**OCASIONAL** Socio que no tiene un turno fijo asignado y reserva clases individuales.
--**SOCIO:** Usuario registrado en el sistema que puede reservar actividades y gestionar su cuenta.
--**EMPLEADO:** Usuario operativo cuyo rol está asociado a una actividad específica que puede gestionar.
--**ADMINISTRADOR:** Usuario con permisos elevados para gestionar el sistema y acceder a información sensible.
--**SEÑA:** Pago parcial requerido para reservar una clase individual.
--**CRÉDITO:** Saldo a favor del socio que puede ser utilizado para futuras reservas o cobros.
--**LISTA DE ESPERA:** Mecanismo para gestionar reservas cuando una actividad está completa, con asignación automática de cupo si se libera uno.
--**DASHBOARD:** Panel de control para el administrador con indicadores clave del negocio.
--**API:** Interfaz de Programación de Aplicaciones, utilizada para integrar servicios externos como pasarelas de pago.
--**PWA:** Aplicación Web Progresiva, una aplicación web que se comporta como una aplicación nativa en dispositivos móviles.
--**CAD:** Sistema de gestión de Centro de Actividades Deportivas.
+- **Abonado:** Socio con un turno fijo asignado en una actividad específica cada mes, con beneficios como descuentos y prioridad en reservas.
+- **Ocasional:** Socio que no tiene un turno fijo asignado y reserva clases individuales.
+- **Socio:** Usuario registrado en el sistema que puede reservar actividades y gestionar su cuenta.
+- **Empleado:** Usuario operativo cuyo rol está asociado a una actividad específica que puede gestionar.
+- **Administrador:** Usuario con permisos elevados para gestionar el sistema y acceder a información sensible.
+- **Seña:** Pago parcial requerido para reservar una clase individual.
+- **Crédito:** Saldo a favor del socio que puede ser utilizado para futuras reservas o cobros.
+- **Lista de espera:** Mecanismo para gestionar reservas cuando una actividad está completa, con asignación automática de cupo si se libera uno.
+- **Dashboard:** Panel de control para el administrador con indicadores clave del negocio.
+- **API:** Interfaz de Programación de Aplicaciones. Permite la integración con servicios externos, como pasarelas de pago.
+- **PWA:** Aplicación Web Progresiva. Aplicación web que se comporta como una aplicación nativa en dispositivos móviles.
+- **CAD:** Nombre del sistema de gestión del Centro de Actividades Deportivas.
+- **Rol:** Configuración que permite asignar permisos específicos a los usuarios empleados y definir sus accesos en el sistema.
 
 ### 1.4 Referencias
 
@@ -37,7 +38,7 @@ Nombre del documento | Fecha de creacion | Autor
 
 ### a. Resumen de la idea del producto
 
-"CAD" es una platafroma web progresiva (PWA) diseñada para digitalizar y automatizar la gestión de un centro deportivo que ofrece múltiples actividades. 
+"CAD" es una plataforma web progresiva (PWA) diseñada para digitalizar y automatizar la gestión de un centro deportivo que ofrece múltiples actividades. 
 
 El sistema permitirá a los socios registrarse, reservar actividades, gestionar pagos y recibir notificaciones, mientras que los empleados podrán administrar las operaciones diarias y el administrador tendrá acceso a métricas clave para la toma de decisiones estratégicas.
 
@@ -93,13 +94,15 @@ Los empleados podrán gestionar actividades, turnos y asistencias mediante QR, m
 
 - La interfaz de usuario debe ser intuitiva y fácil de navegar, con un diseño responsive que se adapte tanto a pc como a dispositivos móviles.
 
-Logo Propuesto: 
-![Logo](../../assets/Logo.png)
+<div style="text-align: center;">
+	<p style="font-size: 1.2em; font-weight: bold;">Logo Propuesto por Syncro:</p>
+	<img src="../../assets/Logo.png" alt="Logo" width="180"/>
+</div>
 
 #### b. Interfaces de Software
 
 - **Mercado Pago:** 
-	* Proposito: Facilitar el proceso de pagos en linea para reservas tanto de actividades como de clases.
+	* Propósito: Facilitar el proceso de pagos en línea para reservas tanto de actividades como de clases.
 	* Uso: El usuario del sistema podra registrar su medio de pago (Mercado pago) y realizar pagos de seña o pagos completos para confirmar sus reservas. El sistema se integrara con la API de Mercado Pago para procesar estos pagos de manera segura y eficiente.
 	* Integraciones: El sistema se comunicara con la API de Mercado Pago para gestionar la transaccion.
 	* Consideraciones: La funcionalidad depende de la disponibilidad de la API de Mercado Pago, y se implementaran medidas de seguridad para proteger los datos de pago de los usuarios.
@@ -110,41 +113,34 @@ Logo Propuesto:
 
 ### 3.2 Requisitos funcionales
 
-- RF-01: Registrarse.
-- RF-02: Iniciar sesión.
-- RF-03: Cerrar sesión.
-- RF-04: Recuperar contraseña.
-- RF-05: Modificar contraseña.
-- RF-06: Ver perfil de usuario.
-- RF-07: Editar perfil de usuario.
-- RF-08: Consultar listado de personal.
-- RF-09: Registrar personal del centro.
-- RF-10: Modificar datos del personal.
-- RF-11: Dar de baja al personal.
-- RF-12: Consultar listado de actividades.
-- RF-13: Crear actividad deportiva.
-- RF-14: Modificar actividad deportiva.
-- RF-15: Dar de baja actividad deportiva.
-- RF-16: Crear turnos de una actividad.
-- RF-17: Modificar turno de una actividad.
-- RF-18: Consultar turnos de una actividad.
-- RF-19: Eliminar turno de una actividad.
-- RF-20: Inscribirse a actividad en un turno específico.
-- RF-21: Reservar clases individuales.
-- RF-22: Confirmación de asistencia de lista espera.
-- RF-23: Anotarse en lista de espera.
-- RF-24: Cancelar reservas.
-- RF-25: Registrar medio de pago.
-- RF-26: Eliminar medio de pago registrado.
-- RF-27: Abonar seña de reserva.
-- RF-28: Registrar cobro manual.
-- RF-29: Registrar pago.
-- RF-30: Registrar asistencia mediante escaneo de código QR.
-- RF-31: Consultar panel de métricas.
+#### 3.2.1 Gestión de Autenticación y Usuarios
+#### 3.2.2 Gestión de Actividades y Reservas
+#### 3.2.3 Turnos
+#### 3.2.4 Reservas
+#### 3.2.5 Gestión de Lista de Espera
+#### 3.2.6 Gestión de Créditos y Pagos
+#### 3.2.7 Gestión de Notificaciones
+#### 3.2.8 Gestión de Personal
+#### 3.2.9 Gestión de Roles y Permisos
+#### 3.2.10 Gestión de Asistencia
+#### 3.2.11 Métricas
+
+Link a Taiga: https://tree.taiga.io/project/isa-cast-ing2_2026_grupo_47/epics
 
 ### 3.3 Requisitos no funcionales
 
-- RNF-01 Diseño responsive para uso en PC y dispositivos móviles.
-- RNF-02 Soporte para al menos 200 usuarios activos concurrentes.
-- RNF-03 Identidad visual simple y moderna orientada a velocidad operativa.
+- **Fiabilidad:** El sistema deberá garantizar la integridad de los datos ante fallos de red o energía, permitiendo la recuperación de las operaciones una vez restablecidas las condiciones normales.
+
+- **Mantenibilidad:** El sistema será entregado sin compromiso de mantenimiento posterior a la entrega final. Cualquier mantenimiento adicional quedará fuera del alcance de este proyecto.
+
+- **Multiplataforma:** El sistema, al ser implementando como Progressive Web App (PWA), es multiplataforma por definición, pudiendo ser utilizado en cualquier dispositivo con un navegador web, como ordenadores, tablets o móviles.
+
+- **Seguridad:** El sistema contará con autenticación para el acceso a funcionalidades específicas a través de cuentas, distinguiendo entre usuario general, empleado y gerente (administrador). Si no se inició sesión, no se podra acceder a ninguna funcionalidad del sistema. Las contraseñas deberán almacenarse de forma cifrada mediante algoritmos seguros.
+
+- **Privacidad:** El sistema implementará estrictas medidas de privacidad para garantizar la protección de la información personal y los datos de los usuarios, asegurando que toda información personal se maneje de acuerdo con las normativas de protección de datos vigentes.
+
+- **Concurrencia:** El sistema debe soportar múltiples usuarios accediendo simultáneamente, garantizando que las operaciones como reservas, pagos y actualizaciones de datos se realicen sin conflictos. Se implementará un mecanismo de control de concurrencia en la base de datos (como transacciones) para evitar inconsistencias, por ejemplo, en la reserva simultánea de una misma actividad.
+
+- **Rendimiento:** El sistema debe ser capaz de manejar un número significativo de usuarios simultáneos (al menos 200 usuarios activos) sin degradación significativa del rendimiento. Las operaciones críticas, como la reserva de actividades o el procesamiento de pagos, deben completarse en un tiempo razonable para garantizar una experiencia de usuario fluida.
+
 
