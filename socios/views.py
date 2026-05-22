@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.admin.views.decorators import staff_member_required
 
 # Create your views here.
 
@@ -7,6 +8,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib import messages
 from reservas.models import Reserva
+from socios.models import Socio
 
 # Función de validación de permisos
 def es_empleado_o_admin(user):
@@ -39,6 +41,16 @@ def socio_reservas(request, socio_id):
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
         'reservas': reservas})
+
+# @login_required
+# @staff_member_required(login_url='home')
+# def socio_reservas(request, socio_id):
+#     socio = Socio.objects.get(pk=socio_id)
+#     reservas = socio.get_reservas()
+#     return render(request, 'socios/socio_reservas.html', {
+#         'socio': socio,
+#         'reservas': reservas
+#     })
 
 # 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
 @login_required

@@ -12,7 +12,7 @@ class MetodoAsistencia(models.TextChoices):
     QR = 'QR', 'Código QR'
 
 class Reserva(models.Model):
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='reservas')
     clase_programada = models.ForeignKey(ClaseProgramada, on_delete=models.CASCADE)
     fecha_reserva = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=EstadoReserva.choices, default=EstadoReserva.ACTIVA)
