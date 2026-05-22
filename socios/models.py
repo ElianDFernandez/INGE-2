@@ -25,7 +25,7 @@ class Socio(User):
     def get_contexto_home(self):
         hoy = timezone.localdate()
         fin_semana = hoy + timezone.timedelta(days=6)
-        reservas_semana = self.get_reservas_en_periodo(7)
+        reservas_semana = self.get_reservas_en_periodo(7).filter(estado='ACTIVA')
 
         reservas_por_fecha = {}
         for reserva in reservas_semana:
