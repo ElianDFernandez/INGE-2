@@ -29,11 +29,38 @@ def socio_list(request):
         'socios': socios,
         'q': q
     })
-# TEMPORAL: vista de detalle de socio con sus reservas (después la vamos a mejorar)
+# 2. VER RESERVAS DE UN SOCIO ESPECÍFICO
 @login_required
 @user_passes_test(es_empleado_o_admin, login_url='home')
 def socio_reservas(request, socio_id):
-    # Por ahora solo traigo al socio, después le agregamos las reservas de verdad
+    # Traigo el historial de reservas de este usuario particular
     socio = get_object_or_404(User, id=socio_id)
-    return render(request, 'socios/socio_reservas.html', {'socio': socio})
+    reservas = Reserva.objects.filter(user=socio).order_by('-clase_programada__fecha', '-clase_programada__clase__hora_inicio')
+    return render(request, 'socios/socio_reservas.html', {
+        'socio': socio,
+        'reservas': reservas})
+
+# 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
+@login_required
+@user_passes_test(es_empleado_o_admin, login_url='home')
+def registrar_asistencia(request, reserva_id):
+    if request.method == 'POST':
+        reserva = get_object_or_404(Reserva, id=reserva_id)
+        reserva.asistio = True
+        reserva.fecha_asistencia = timezone.now()
+        reserva.empleado_registro = request.user
+        reserva.save()
+        messages.success(request, f"Asistencia confirmada para {reserva.user.username}.")
+    return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
+
+# 4. ACCIÓN: REGISTRAR PAGO MANUAL
+@login_required
+@user_passes_test(es_empleado_o_admin, login_url='home')
+def registrar_pago(request, reserva_id):
+    if request.method == 'POST':
+        reserva = get_object_or_404(Reserva, id=reserva_id)
+        reserva.pago_confirmado = True 
+        reserva.save()
+        messages.success(request, f"Pago registrado con éxito para la clase de {reserva.user.username}.")
+    return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 

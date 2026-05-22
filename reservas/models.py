@@ -18,6 +18,8 @@ class Reserva(models.Model):
     estado = models.CharField(max_length=20, choices=EstadoReserva.choices, default=EstadoReserva.ACTIVA)
     fecha_cancelacion = models.DateTimeField(null=True, blank=True)
     metodo_asistencia = models.CharField(max_length=20, choices=MetodoAsistencia.choices, null=True, blank=True, default=None)
+    asistio = models.BooleanField(default=False)
+    pago_confirmado = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['estado', '-fecha_reserva']
