@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.urls import reverse_lazy
@@ -68,6 +69,13 @@ class TurnoListView(EmpleadoRequiredMixin, ListView):
             EmpleadoActividad.objects.filter(empleado=self.request.user)
             .values_list("actividad_id", flat=True)
         )
+        context["turnos_con_reservas_ids"] = set(
+            Turno.objects.filter(
+                clase__claseprogramada__reserva__isnull=False
+            ).exclude(
+                clase__claseprogramada__reserva__estado='CANCELADA'
+            ).values_list("id", flat=True).distinct()
+        )
         return context
 
 class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
@@ -84,6 +92,16 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     model = Turno
     template_name = 'turnos/turno_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.tiene_reservas():
+            messages.error(
+                request,
+                f'No se puede eliminar el turno "{self.object.nombre}" porque tiene reservas asociadas.'
+            )
+            return redirect(self.success_url)
+        return super().post(request, *args, **kwargs)
 
 class ClaseCreateView(EmpleadoRequiredMixin, CreateView):
     model = Clase
@@ -123,6 +141,21 @@ class ClaseDeleteView(EmpleadoRequiredMixin, DeleteView):
     model = Clase
     template_name = 'clases/clase_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.tiene_reservas():
+            messages.error(
+                request,
+                'No se puede eliminar la clase porque tiene reservas asociadas.'
+            )
+            return redirect(self.get_success_url())
+        return super().post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tiene_reservas'] = self.object.tiene_reservas()
+        return context
     
     def get_success_url(self):
         return reverse_lazy(

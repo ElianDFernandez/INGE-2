@@ -75,11 +75,19 @@
                         <i class="fa-solid fa-pen"></i>
                     </a>
 
+                    {% if turno.pk in turnos_con_reservas_ids %}
+                    <span class="btn btn-sm btn-outline-danger ms-1 disabled"
+                          title="No se puede eliminar: tiene reservas asociadas"
+                          aria-disabled="true">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    {% else %}
                     <a href="{% url 'turno_delete' turno.pk %}"
                        class="btn btn-sm btn-outline-danger ms-1"
                        title="Eliminar Turno">
                         <i class="fa-solid fa-trash"></i>
                     </a>
+                    {% endif %}
                     {% endif %}
 
                 </div>

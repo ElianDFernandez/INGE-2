@@ -24,6 +24,16 @@ class Turno(models.Model):
     actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
 
+    def tiene_reservas(self):
+        from reservas.models import Reserva, EstadoReserva
+
+        return Reserva.objects.filter(
+            clase_programada__clase__turno=self
+        ).exclude(estado=EstadoReserva.CANCELADA).exists()
+
+    def tiene_clases(self):
+        return self.clase_set.exists()
+
 
 class Clase(models.Model):
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
@@ -33,6 +43,13 @@ class Clase(models.Model):
     hora_fin = models.TimeField()
     costo = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)])
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+
+    def tiene_reservas(self):
+        from reservas.models import Reserva, EstadoReserva
+
+        return Reserva.objects.filter(
+            clase_programada__clase=self
+        ).exclude(estado=EstadoReserva.CANCELADA).exists()
     
     def dia_numero(self): # usado para generar las clases programadas
         dias = {
