@@ -15,6 +15,14 @@ class ActividadListView(EmpleadoRequiredMixin, ListView):
     template_name = 'actividades/actividad_list.html'
     context_object_name = 'actividades'
 
+    def get_queryset(self):
+        queryset = Actividad.objects.order_by('nombre')
+        busqueda = self.request.GET.get('busqueda', '')
+        if busqueda:
+            queryset = queryset.filter(nombre__icontains=busqueda)
+
+        return queryset
+
 class ActividadCreateView(EmpleadoRequiredMixin, CreateView):
     model = Actividad
     form_class = ActividadForm

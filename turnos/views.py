@@ -60,7 +60,13 @@ class TurnoListView(EmpleadoRequiredMixin, ListView):
     context_object_name = "turnos"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("actividad")
+        return (
+            super()
+            .get_queryset()
+            .select_related("actividad")
+            .prefetch_related("clase_set")
+            .order_by("actividad__nombre", "nombre")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
