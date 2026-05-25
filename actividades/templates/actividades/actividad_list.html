@@ -61,8 +61,14 @@
                     <tr>
                         <td class="ps-4 fw-bold">{{ actividad.nombre }}</td>
                         <td class="pe-4 text-end">
-                            <a href="{% url 'actividad_edit' actividad.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                            <a href="{% url 'actividad_delete' actividad.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                            <a href="{% url 'actividad_edit' actividad.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
+                            {% if actividad.tiene_reservas %}
+                                <span class="btn btn-sm btn-outline-danger ms-1 disabled" title="No se puede eliminar: tiene reservas asociadas" aria-disabled="true">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                            {% else %}
+                                <a href="{% url 'actividad_delete' actividad.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
