@@ -1,30 +1,76 @@
 # Historias de Usuario
 
+<<<<<<< HEAD
 ## ID: Registrar Socio
 ### Título:
 **como** cliente 
 **quiero** registrarme en el sistema
 **para** poder reservar actividades o clases.
+=======
+## Plantilla
 
-### Reglas de Negocio:
-- Regla 1: El email debe ser único.
-- Regla 2: La contraseña debe tener al menos 8 caracteres, incluyendo una letra mayúscula, una minúscula y un número.
+**ID**: [Identificador con accion y entidad, por ejemplo: Registrar Socio]
+**Título**: [Título descriptivo de la historia de usuario]
+**Reglas de Negocio:**
+- [Regla de negocio 1]
+- [Regla de negocio 2]
 
-### Criterios de Aceptación:
-Escenario 1: Registro exitoso
+**Criterios de Aceptación:**
+Escenario 1: [Descripción breve del escenario]
 ````
+- Dado [contexto], cuando [acción], entonces [resultado].
+````
+Escenario 2: [Descripción breve del escenario]
+````
+- Dado [contexto], cuando [acción], entonces [resultado].
+````
+Escenario n: [Descripción breve del escenario]
+````
+- [...]
+````
+
+## Historias de Usuario
+
+**ID**: Registrar empleado
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
+
+**Título**: Como administrador quiero registrar un empleado en el sistema para que pueda operar en el establecimiento 
+
+**Reglas de Negocio:**
+
+-    -El DNI debe ser unico
+-    -El correo electronico debe ser unico
+-    -El correo electronico sera el nombre de usuario
+
+**Criterios de Aceptación:**
+
+Escenario 1: Registro de empleado exitoso
+````
+<<<<<<< HEAD
 - Dado un nombre de usuario "Jose Martinez", un email "joseMartinez@mail.com", el cual no se encuentra registrado, y una contraseña "Password123", 
 Cuando el cliente completa el formulario de registro y lo envía, 
 Entonces el sistema crea una nueva cuenta de socio y muestra un mensaje de confirmación.
+=======
+-Dado el nombre "Vladimir",apellido "Agreda",DNI "41744508" que no se encuentra registrado y el correo electronico "emaildevladimir@gmail.com" que no existe en el sistema.
+-Cuando se ingresa nombre "Vladimir",apellido "Agreda",DNI "41744508",correo electronico "emaildevladimir@gmail.com" y se apreta el boton "Registrar empleado"
+-Entonces el sistema registra al nuevo empleado en el sistema y envia al correo electronico del empleado un instructivo para la creacion de su contraseña de acceso  
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 ````
-Escenario 2: Email ya registrado
+Escenario 2: Registro de empleado fallido por DNI existente 
 ````
+<<<<<<< HEAD
 - Dado un nombre de usuario "Maria Lopez", un email "mariaLopez@mail.com", el cual ya se encuentra registrado, y una contraseña "Password123", 
 Cuando el cliente completa el formulario de registro y lo envía,
 Entonces el sistema muestra un mensaje de error indicando que el email ya está en uso.
+=======
+-Dado el nombre "Vladimir",apellido "Agreda" y DNI "41744508" que ya se encuentra registrado en el sistema.
+-Cuando se ingresa nombre "Vladimir",apellido "Agreda",DNI "41744508",correo electronico "vladi@gmail.com" y se apreta el boton "Registrar empleado" 
+-Entonces el sistema informa "Error de registro.El DNI ingresado ya corresponde a un empleado"
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 ````
-Escenario 3: Contraseña no cumple requisitos
+Escenario 3: Registro de empleado fallido por correo electronico existente 
 ````
+<<<<<<< HEAD
 - Dado un nombre de usuario "Carlos Gomez", un email "carlosGomez@mail.com", el cual no se encuentra registrado, y una contraseña "password"
 Cuando el cliente completa el formulario de registro y lo envía
 Entonces el sistema muestra un mensaje de error indicando que la contraseña no cumple con los requisitos.
@@ -452,12 +498,33 @@ Entonces el sistema informa "Error de registro.El correo electronico ingresado y
 -   -El correo electronico debe ser unico
 
 ### Criterios de Aceptación:
+=======
+Dado el nombre "Vladimir",apellido "Agreda",DNI 41744508 que no se encuentra registrado en el sistema y el correo electronico "emaildevladimir@gmail.com" que se encuentra en el sistema 
+Cuando se ingresa el nombre "Vladimir",apellido "Agreda",DNI "41744508",correo electronico "emaildevladimir@gmail.com" y se apreta el boton "Registrar empleado" 
+Entonces el sistema informa "Error de registro.El correo electronico ingresado ya corresponde a un empleado".
+````
+
+**ID**:Modificar datos de empleado 
+
+**Título**: Como administrador quiero modificar los datos un empleado para que queden actualizados 
+
+**Reglas de Negocio**:
+
+-   -El DNI debe ser unico 
+-   -El correo electronico debe ser unico
+
+**Criterios de Aceptación:**
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 
 Escenario 1: Modificacion exitosa de correo electronico 
 ````
 - Dado el usuario "correodevladimir@gmail.com" que pertenece a un empleado registrado en el sistema y el correo electronico "correodevladimir2@gmail" que no existe en el sistema 
 -Cuando el admnistrador selecciona el usuario "correodevladimir@gmail.com",selecciona "Modificar datos",luego selecciona "Correo electronico",ingresa "correodevladimir2@gmail.com" como nuevo correo electronico y presiona "Confirmar" 
+<<<<<<< HEAD
 -Entonces el sistema registra y actualiza el nuevo cambio,y envia una notificacion al nuevo correo
+=======
+-Entonces el sistema registra el nuevo cambio,genera una contraseña y la envia al correo electronico del empleado,luego espera confirmacion del correo??? y actualiza los datos  
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 
 Escenario 2:Modificacion de datos exitosa 
 -Dado el usuario "correodevladimir2@gmail.com" perteneciente a un empleado registrado en el sistema y el nombre "Aguiala"
@@ -474,6 +541,7 @@ Escenario 4: Modificacion de datos fallida por cancelacion de la operacion
 -Cuando el administrador selecciona el usuario "llll@gmail.com",selecciona "Modificar datos",luego selecciona "Nombre",ingresa "Kvicha" como nuevo nombre y apreta en "Cancelar"
 -Entonces el sistema informa "Operacion cancelada" 
 ````
+<<<<<<< HEAD
 ### ID: Dar de baja empleado
 
 ### Título:
@@ -489,6 +557,17 @@ Escenario 4: Modificacion de datos fallida por cancelacion de la operacion
 ````
 Escenario 1: Baja de empleado exitosa 
 
+=======
+**ID**: Dar de baja empleado
+
+**Título**:Como administrador quiero dar de baja un empleado para que no figure mas en el sistema
+
+**Reglas de Negocio:**
+
+**Criterios de Aceptación:**
+Escenario 1: Baja de empleado exitosa 
+````
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 - Dado el usuario "jjjj@gmail.com" que pertenece a un empleado registrado en el sistema 
 -Cuando el administrador seleccion el usuario "jjjj@gmail.com",selecciona "Dar de baja" y confirma la operacion 
 -Entonces el sistema registra la operacion,da de baja al empleado y envia la notificacion a su correo electronico 
@@ -497,4 +576,20 @@ Escenario 2: Baja de empleado fallida por cancelacion de operacion
 -Dado el usuario "jjjj@gmail.com" que pertenece a un empleado registrado en el sistema 
 -Cuando el administrador seleccion el usuario "jjjj@gmail.com",selecciona "Dar de baja" y cancela la operacion   
 -Entonces el sistema informa "Operacion cancelada" 
+<<<<<<< HEAD
+=======
+````
+**ID**: Crear acividad
+
+**Título**: Como empleado quieo crear una actividad para que los clientes puedan participar
+
+**Reglas de Negocio:**
+- [Regla de negocio 1]
+- [Regla de negocio 2]
+
+**Criterios de Aceptación:**
+Escenario 1: Creacion de actividad exitosa 
+-Dado la actividad "Futbol",los dias "Lunes","Martes" y "Viernes",el horario de inicio "14:00" y horario de fin "16:00",canchas de futbol disponibles para ese horario de "2" y numero de cupo en"30"
+
+>>>>>>> 4ef529b387ae2ae03ad0cee1d1b3097e7666cece
 ````
