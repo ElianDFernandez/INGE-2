@@ -78,5 +78,3 @@ def reserva_cancel(request, reserva_pk):
         form = ReservaCancelForm()
 
     return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
-
-

@@ -30,10 +30,10 @@ class ReservaCancelForm(forms.Form):
         model = Reserva
         fields = []
 
-        def clean(self):
-            cleaned_data = super().clean()
+    def clean(self):
+        cleaned_data = super().clean()
 
-            if self.instance.estado != EstadoReserva.ACTIVA:
-                raise forms.ValidationError('La reserva ya está cancelada.')
-            
-            return cleaned_data
+        if self.instance.estado != EstadoReserva.ACTIVA:
+            raise forms.ValidationError('La reserva ya está cancelada.')
+
+        return cleaned_data
