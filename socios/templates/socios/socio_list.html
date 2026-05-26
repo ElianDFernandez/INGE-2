@@ -62,7 +62,7 @@
                     <tbody>
                         {% for socio in socios %}
                         <tr>
-                            <td class="ps-4 fw-bold text-secondary">{{ socio.username }}</td>
+                            <td class="ps-4 fw-bold">{{ socio.username }}</td>
                             <td>{{ socio.email|default:"Sin registrar" }}</td>
                             <td class="pe-4 text-center text-md-end">
                                 <a href="{% url 'socio_reservas' socio.id %}" class="btn btn-sm btn-outline-primary" title="Ver Reservas">
