@@ -74,8 +74,21 @@
                             </td>
                             <td class="pe-4 text-end">
                                 {% if reserva.estado|lower == 'cancelada' %}
-                                    <span>-</span>
-                                {% else %}
+                                    
+                                    {% if reserva.corresponde_devolucion %}
+                                        {% if not reserva.sena_devuelta %}
+                                            <form action="{% url 'registrar_devolucion' reserva.id %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning mb-1" title="Canceló con más de 24hs">
+                                                    <i class="fa-solid fa-rotate-left me-1"></i> Devolver Seña
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <small class="text-success fw-bold"><i class="fa-solid fa-check-double me-1"></i>Seña Devuelta</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span>-</span>
+                                    {% endif %} {% else %}
                                     <div class="d-inline-flex">
                                         {% if not reserva.asistio %}
                                             <form action="{% url 'registrar_asistencia' reserva.id %}" method="POST" class="d-inline">
@@ -94,6 +107,7 @@
                                                 </button>
                                             </form>
                                         {% endif %}
+                                        
                                         {% if reserva.asistio and reserva.pago_confirmado %}
                                             <span>-</span>
                                         {% endif %}

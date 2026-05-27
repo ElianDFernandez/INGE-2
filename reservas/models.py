@@ -1,4 +1,6 @@
 from django.db import models
+from datetime import datetime, timedelta
+from django.utils import timezone
 from turnos.models import ClaseProgramada
 
 class EstadoReserva(models.TextChoices):
@@ -25,6 +27,32 @@ class Reserva(models.Model):
     asistio = models.BooleanField(default=False)
     pago_confirmado = models.BooleanField(default=False)
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, null=True, blank=True)
+    sena_devuelta = models.BooleanField(default=False)
+
+    @property
+    def corresponde_devolucion(self):
+        """
+        Regla de Negocio: Corresponde devolución SI la reserva fue cancelada, 
+        estaba pagada, y se canceló con 24hs o más de anticipación.
+        """
+        if self.estado == EstadoReserva.CANCELADA and self.pago_confirmado:
+            if self.fecha_cancelacion:
+                # 1. Unimos la fecha (ClaseProgramada) y la hora de inicio (Clase/Turno) en una sola variable
+                fecha_hora_clase = datetime.combine(
+                    self.clase_programada.fecha, 
+                    self.clase_programada.clase.hora_inicio
+                )
+                
+                # 2. Le decimos a Django en qué zona horaria está esa fecha (para evitar errores de timezone)
+                fecha_hora_clase = timezone.make_aware(fecha_hora_clase, timezone.get_current_timezone())
+                
+                # 3. Calculamos la diferencia de tiempo
+                tiempo_anticipacion = fecha_hora_clase - self.fecha_cancelacion
+                
+                # 4. Devolvemos True si la diferencia es mayor o igual a 24 horas
+                return tiempo_anticipacion >= timedelta(hours=24)
+        
+        return False
 
     class Meta:
         ordering = ['estado', '-fecha_reserva']

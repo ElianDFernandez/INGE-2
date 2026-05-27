@@ -63,3 +63,19 @@ def registrar_pago(request, reserva_id):
         messages.success(request, f"Pago registrado con éxito para la clase de {reserva.user.username}.")
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
+
+@login_required
+@staff_member_required(login_url='home')
+def registrar_devolucion(request, reserva_id):
+    if request.method == 'POST':
+        reserva = get_object_or_404(Reserva, id=reserva_id)
+        
+        # Marcamos que ya se le devolvió la seña manualmente
+        reserva.sena_devuelta = True
+        reserva.save()
+        
+        # Mensaje aclaratorio de que es manual
+        messages.success(request, f"Seña devuelta manualmente a {reserva.user.username}. (La carga automática de créditos se implementará en el próximo sprint).")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
+

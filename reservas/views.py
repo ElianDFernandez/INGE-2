@@ -2,6 +2,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 
 from django.contrib import messages
 from django.urls import reverse
@@ -78,5 +79,7 @@ def reserva_cancel(request, reserva_pk):
         form = ReservaCancelForm()
 
     return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
+
+
 
 
