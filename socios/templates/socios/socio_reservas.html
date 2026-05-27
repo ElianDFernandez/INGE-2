@@ -52,6 +52,7 @@
                                 {% if reserva.estado|lower != 'cancelada' %}
                                     {% if reserva.asistio %}
                                         <span class="badge bg-success mb-1"><i class="fa-solid fa-check me-1"></i>Presente</span>
+                                        <small class="text-muted d-block" style="font-size: 0.70rem;">Por: {{ reserva.get_metodo_asistencia_display }}</small>
                                     {% else %}
                                         <span class="badge bg-secondary mb-1">Ausente</span>
                                     {% endif %}
@@ -63,6 +64,7 @@
                                 {% if reserva.estado|lower != 'cancelada' %}
                                     {% if reserva.pago_confirmado %}
                                         <span class="badge bg-success"><i class="fa-solid fa-dollar-sign me-1"></i>Abonado</span>
+                                        <small class="text-muted d-block" style="font-size: 0.70rem;">Vía: {{ reserva.get_metodo_pago_display }}</small>
                                     {% else %}
                                         <span class="badge bg-warning text-dark">Pendiente</span>
                                     {% endif %}
