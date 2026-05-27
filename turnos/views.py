@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.urls import reverse_lazy
@@ -23,10 +24,7 @@ class TurnoActividadRequiredMixin(EmpleadoRequiredMixin):
         turno = self.get_object()
         return EmpleadoActividad.objects.filter(empleado=user, actividad=turno.actividad).exists()
 
-def placeholder(request):
-    return HttpResponse("Página en construcción")
-
-# Crea al turno con su clase asociada
+# Crea al turno con su clase asociada, y genera las clases de este mes
 def create_turno(request):
     if request.method == 'POST':
         turno_form = TurnoForm(request.POST, user=request.user)
@@ -43,6 +41,7 @@ def create_turno(request):
 
             clase.turno = turno
             clase.save()
+            turno.generar_clases_programadas()
 
             return redirect('turno_list')
     else:
@@ -60,13 +59,27 @@ class TurnoListView(EmpleadoRequiredMixin, ListView):
     context_object_name = "turnos"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("actividad")
+        return (
+            super()
+            .get_queryset()
+            .select_related("actividad")
+            .prefetch_related("clase_set")
+            .order_by("actividad__nombre", "nombre")
+            .filter(activo=True)
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["actividades_asignadas_ids"] = set(
             EmpleadoActividad.objects.filter(empleado=self.request.user)
             .values_list("actividad_id", flat=True)
+        )
+        context["turnos_con_reservas_ids"] = set(
+            Turno.objects.filter(
+                clase__claseprogramada__reserva__isnull=False
+            ).exclude(
+                clase__claseprogramada__reserva__estado='CANCELADA'
+            ).values_list("id", flat=True).distinct()
         )
         return context
 
@@ -75,15 +88,36 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
     form_class = TurnoForm
     template_name = 'turnos/turno_edit.html'
     success_url = reverse_lazy('turno_list')
+
+    def get_queryset(self):
+        return Turno.objects.filter(activo=True)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user # Le pasamos el usuario actual al form
         return kwargs
 
+# Soft Delete, turno y clases asociadas se desactivan (pero siguen estando en la DB)
 class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     model = Turno
     template_name = 'turnos/turno_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
+
+    def get_queryset(self):
+        return Turno.objects.filter(activo=True)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        if self.object.tiene_reservas():
+            messages.error(
+                request,
+                f'No se puede eliminar el turno "{self.object.nombre}" porque tiene reservas activas asociadas.'
+            )
+            return redirect(self.success_url)
+        
+        self.object.desactivar()
+        return redirect(self.success_url)
 
 class ClaseCreateView(EmpleadoRequiredMixin, CreateView):
     model = Clase
@@ -106,6 +140,9 @@ class ClaseUpdateView(EmpleadoRequiredMixin, UpdateView):
     form_class = ClaseForm
     template_name = 'clases/clase_form.html'
 
+    def get_queryset(self):
+        return Clase.objects.filter(activo=True)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['actividad'] = self.object.turno.actividad
@@ -123,6 +160,24 @@ class ClaseDeleteView(EmpleadoRequiredMixin, DeleteView):
     model = Clase
     template_name = 'clases/clase_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
+
+    def get_queryset(self):
+        return Clase.objects.filter(activo=True)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.tiene_reservas():
+            messages.error(
+                request,
+                'No se puede eliminar la clase porque tiene reservas asociadas.'
+            )
+            return redirect(self.get_success_url())
+        return super().post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tiene_reservas'] = self.object.tiene_reservas()
+        return context
     
     def get_success_url(self):
         return reverse_lazy(

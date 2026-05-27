@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
-# EmpleadoManager se encarga de filtrar usuarios que son empleados (is_staff=True)
 class EmpleadoManager(UserManager):
 	def get_queryset(self):
 		return super().get_queryset().filter(is_staff=True)
@@ -11,6 +10,11 @@ from actividades.models import Actividad
 
 class Empleado(User):
 	objects = EmpleadoManager()
+
+	class Meta:
+		proxy = True
+		verbose_name = 'Empleado'
+		verbose_name_plural = 'Empleados'
 
 	def asignar_actividad(self, actividad_id):
 		actividad = Actividad.objects.get(pk=actividad_id)
@@ -23,10 +27,8 @@ class Empleado(User):
 	def obtener_actividades(self):
 		return Actividad.objects.filter(empleadoactividad__empleado=self)
 
-	class Meta:
-		proxy = True
-		verbose_name = 'Empleado'
-		verbose_name_plural = 'Empleados'
+	def get_contexto_home(self):
+		return {}
 
 
 # Modelo intermedio para asignar actividades a empleados

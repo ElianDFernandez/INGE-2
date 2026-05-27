@@ -1,20 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
-
-# Create your views here.
+from django.contrib.admin.views.decorators import staff_member_required
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib import messages
 from reservas.models import Reserva
-
-# Función de validación de permisos
-def es_empleado_o_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+from socios.models import Socio
 
 # 1. LISTADO GENERAL DE SOCIOS + BUSCADOR
 @login_required
-@user_passes_test(es_empleado_o_admin, login_url='home')
+@staff_member_required(login_url='home')
 def socio_list(request):
     q = request.GET.get('q', '')
     
@@ -29,9 +25,10 @@ def socio_list(request):
         'socios': socios,
         'q': q
     })
+
 # 2. VER RESERVAS DE UN SOCIO ESPECÍFICO
 @login_required
-@user_passes_test(es_empleado_o_admin, login_url='home')
+@staff_member_required(login_url='home')
 def socio_reservas(request, socio_id):
     # Traigo el historial de reservas de este usuario particular
     socio = get_object_or_404(User, id=socio_id)
@@ -42,25 +39,43 @@ def socio_reservas(request, socio_id):
 
 # 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
 @login_required
-@user_passes_test(es_empleado_o_admin, login_url='home')
+@staff_member_required(login_url='home')
 def registrar_asistencia(request, reserva_id):
     if request.method == 'POST':
         reserva = get_object_or_404(Reserva, id=reserva_id)
         reserva.asistio = True
-        reserva.fecha_asistencia = timezone.now()
-        reserva.empleado_registro = request.user
+        reserva.metodo_asistencia = 'MANUAL'
+        #reserva.fecha_asistencia = timezone.now()
+        #reserva.empleado_registro = request.user
         reserva.save()
         messages.success(request, f"Asistencia confirmada para {reserva.user.username}.")
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
 # 4. ACCIÓN: REGISTRAR PAGO MANUAL
 @login_required
-@user_passes_test(es_empleado_o_admin, login_url='home')
+@staff_member_required(login_url='home')
 def registrar_pago(request, reserva_id):
     if request.method == 'POST':
         reserva = get_object_or_404(Reserva, id=reserva_id)
         reserva.pago_confirmado = True 
+        reserva.metodo_pago = 'MANUAL'
         reserva.save()
         messages.success(request, f"Pago registrado con éxito para la clase de {reserva.user.username}.")
+    return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
+
+
+@login_required
+@staff_member_required(login_url='home')
+def registrar_devolucion(request, reserva_id):
+    if request.method == 'POST':
+        reserva = get_object_or_404(Reserva, id=reserva_id)
+        
+        # Marcamos que ya se le devolvió la seña manualmente
+        reserva.sena_devuelta = True
+        reserva.save()
+        
+        # Mensaje aclaratorio de que es manual
+        messages.success(request, f"Seña devuelta manualmente a {reserva.user.username}. (La carga automática de créditos se implementará en el próximo sprint).")
+        
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 

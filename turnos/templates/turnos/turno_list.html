@@ -3,172 +3,107 @@
 {% block title %}Gestión de Turnos - CAD{% endblock %}
 
 {% block content %}
-<div class="mt-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <h2 style="color: var(--cad-primary);">
-            Turnos
-        </h2>
-
-        <a href="{% url 'turno_create' %}" class="btn btn-main-cad">
-            <i class="fa-solid fa-plus me-2"></i>
-            Nuevo Turno
+<div class="mt-4 container-fluid px-0 px-md-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mx-3 mx-md-0 gap-3">
+        <h2 style="color: var(--cad-primary);" class="mb-0">Turnos</h2>
+        {% if user.is_superuser or user.is_staff %}
+        <a href="{% url 'turno_create' %}" class="btn btn-main-cad btn-sm text-nowrap d-flex align-items-center justify-content-center">
+            <i class="fa-solid fa-plus me-2"></i>Nuevo
         </a>
-
+        {% endif %}
     </div>
-
-    <div class="card shadow-sm border-0 mb-2">
-
-        <div class="card-body py-2">
-
-            <div class="row fw-bold text-muted">
-
-                <div class="col-8 ps-3">
-                    Nombre
-                </div>
-
-                <div class="col-4 text-end pe-3">
-                    Acciones
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% for turno in turnos %}
-
-    <div class="card shadow-sm border-0 mb-3">
-
-        <div class="card-body">
-
-            <div class="row align-items-center">
-
-                <!-- nombre y desplegar -->
-                <div class="col-8">
-
-                    <button
-                        class="btn p-0 border-0 bg-transparent text-start w-100"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#turno-{{ turno.pk }}"
-                        aria-expanded="false">
-
-                        <i class="fa-solid fa-chevron-down me-2"></i>
-
-                        <span class="fw-bold fs-5">
-                            {{ turno.nombre }} - {{ turno.actividad.nombre }}
-                        </span>
-
-                    </button>
-
-                </div>
-
-                <!-- acciones -->
-                <div class="col-4 text-end">
-                    {% if user.is_superuser or turno.actividad_id in actividades_asignadas_ids %}
-                    <a href="{% url 'turno_edit' turno.pk %}"
-                       class="btn btn-sm btn-outline-secondary"
-                       title="Editar Turno">
-                        <i class="fa-solid fa-pen"></i>
-                    </a>
-
-                    <a href="{% url 'turno_delete' turno.pk %}"
-                       class="btn btn-sm btn-outline-danger ms-1"
-                       title="Eliminar Turno">
-                        <i class="fa-solid fa-trash"></i>
-                    </a>
-                    {% endif %}
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- clases -->
-        <div class="collapse" id="turno-{{ turno.pk }}">
-
-            <div class="card-body pt-0">
-
-                <table class="table table-hover mb-0">
-
-                    <thead class="table-light">
-
+    <div class="card shadow-sm border-0 mx-3 mx-md-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle text-nowrap">
+                    <thead style="background-color: var(--cad-primary); color: white;">
                         <tr>
-                            <th class="ps-4">Día</th>
-                            <th>Horario</th>
-                            <th>Espacio</th>
-                            <th>Costo</th>
-                            <th>Cupo Máximo</th>
+                            <th class="ps-4 py-3">Turno</th>
+                            <th class="py-3">Actividad</th>
+                            <th class="pe-4 text-end py-3">Acciones</th>
                         </tr>
-
                     </thead>
-
                     <tbody>
-
-                        {% for clase in turno.clase_set.all %}
-
+                        {% for turno in turnos %}
                         <tr>
-
-                            <td class="ps-4">
-                                {{ clase.get_dia_display }}
+                            <td class="ps-4 fw-bold">
+                                <button
+                                    class="btn p-0 border-0 bg-transparent text-start w-100 d-flex align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#turno-{{ turno.pk }}"
+                                    aria-expanded="false">
+                                    <i class="fa-solid fa-chevron-down me-2 text-muted" style="font-size: 0.8rem;"></i>
+                                    <span class="d-inline-block text-truncate" style="max-width: 260px;">{{ turno.nombre }}</span>
+                                </button>
                             </td>
-
                             <td>
-                                {{ clase.hora_inicio }} - {{ clase.hora_fin }}
+                                <span class="badge text-bg-light border text-dark">{{ turno.actividad.nombre }}</span>
                             </td>
-
-                            <td>
-                                {{ clase.get_espacio_display }}
+                            <td class="pe-4 text-end">
+                                {% if user.is_superuser or turno.actividad_id in actividades_asignadas_ids %}
+                                <a href="{% url 'turno_edit' turno.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Turno">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <a href="{% url 'turno_delete' turno.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Turno">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                                {% endif %}
                             </td>
-
-                            <td>
-                                ${{ clase.costo }}
-                            </td>
-
-                            <td>
-                                {{ clase.cupo_maximo }}
-                            </td>
-
                         </tr>
-
+                        <tr class="collapse bg-light" id="turno-{{ turno.pk }}">
+                            <td colspan="3" class="p-0 border-0">
+                                <div class="p-3 p-md-4 border-bottom">
+                                    <h6 class="text-muted mb-3 fs-6">
+                                        <i class="fa-solid fa-clock me-2"></i>Clases asociadas
+                                    </h6>
+                                    <div class="table-responsive bg-white border rounded shadow-sm">
+                                        <table class="table table-sm table-hover mb-0 align-middle text-nowrap">
+                                            <thead class="table-light border-bottom">
+                                                <tr>
+                                                    <th class="ps-3 py-2 text-muted">Día</th>
+                                                    <th class="py-2 text-muted">Horario</th>
+                                                    <th class="py-2 text-muted">Espacio</th>
+                                                    <th class="py-2 text-muted">Costo</th>
+                                                    <th class="pe-3 py-2 text-muted">Cupo Máximo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for clase in turno.clase_set.all %}
+                                                <tr>
+                                                    <td class="ps-3 py-2">{{ clase.get_dia_display }}</td>
+                                                    <td class="py-2">{{ clase.hora_inicio }} - {{ clase.hora_fin }}</td>
+                                                    <td class="py-2">{{ clase.get_espacio_display }}</td>
+                                                    <td class="py-2 fw-medium text-success">${{ clase.costo }}</td>
+                                                    <td class="pe-3 py-2">
+                                                        <span class="badge bg-secondary rounded-pill">{{ clase.cupo_maximo }}</span>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="5" class="text-center py-4 text-muted small">
+                                                        No hay clases asociadas a este turno.
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
                         {% empty %}
-
                         <tr>
-
-                            <td colspan="5"
-                                class="text-center py-4 text-muted">
-
-                                No hay clases asociadas a este turno.
-
+                            <td colspan="3" class="text-center py-5 text-muted">
+                                <i class="fa-regular fa-calendar-xmark fs-2 mb-3 d-block text-black-50"></i>
+                                No hay turnos registrados todavía.
                             </td>
-
                         </tr>
-
                         {% endfor %}
-
                     </tbody>
-
                 </table>
-
             </div>
-
-        </div>
-
-    </div>
-
-    {% empty %}
-
-    <div class="card shadow-sm border-0">
-        <div class="card-body text-center py-4 text-muted">
-            No hay turnos registrados todavía.
         </div>
     </div>
-
-    {% endfor %}
-
 </div>
 {% endblock %}

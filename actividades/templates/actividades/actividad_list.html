@@ -3,19 +3,53 @@
 {% block title %}Gestión de Actividades - CAD{% endblock %}
 
 {% block content %}
-<div class="mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 style="color: var(--cad-primary);">Actividades</h2>
-        {% if user.is_superuser %}
-        <a href="{% url 'actividad_create' %}" class="btn btn-main-cad">
-            <i class="fa-solid fa-plus me-2"></i>Nueva
-        </a>
-        {% endif %}
-    </div>
+<style>
+    @keyframes searchPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.97); }
+        100% { transform: scale(1); }
+    }
 
-    <div class="card shadow-sm border-0">
+    .search-btn.is-loading {
+        animation: searchPulse 0.7s ease-in-out infinite;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+</style>
+
+<div class="mt-4 container-fluid px-0 px-md-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mx-3 mx-md-0 gap-3">
+        <h2 style="color: var(--cad-primary);" class="mb-0">Actividades</h2>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <form method="GET" class="m-0 flex-grow-1" id="actividad-search-form">
+                <div class="d-flex flex-nowrap gap-2">
+                    <input type="text" name="busqueda" class="form-control flex-grow-1" placeholder="Buscar actividad..." value="{{ request.GET.busqueda }}" title="Buscar por nombre de actividad">
+                    <button type="submit" class="btn btn-main-cad btn-sm search-btn text-nowrap d-flex align-items-center justify-content-center" id="actividad-search-btn">
+                        <span class="search-btn-label">
+                            <i class="fa-solid fa-magnifying-glass d-none d-sm-inline me-sm-2"></i>Buscar
+                        </span>
+                        <span class="search-btn-spinner d-none" aria-hidden="true">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        </span>
+                    </button>
+                    {% if request.GET.busqueda %}
+                    <a href="{% url 'actividades_list' %}" class="btn btn-outline-secondary btn-sm text-nowrap d-flex align-items-center">
+                        Limpiar
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+            {% if user.is_superuser %}
+            <a href="{% url 'actividad_create' %}" class="btn btn-main-cad btn-sm text-nowrap d-flex align-items-center justify-content-center">
+                <i class="fa-solid fa-plus me-2"></i>Nueva
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card shadow-sm border-0 mx-3 mx-md-0">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle text-nowrap">
                 <thead style="background-color: var(--cad-primary); color: white;">
                     <tr>
                         <th class="ps-4">Nombre</th>
@@ -28,17 +62,46 @@
                         <td class="ps-4 fw-bold">{{ actividad.nombre }}</td>
                         <td class="pe-4 text-end">
                             <a href="{% url 'actividad_edit' actividad.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
-                            <a href="{% url 'actividad_delete' actividad.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                            {% if actividad.tiene_reservas %}
+                                <span class="btn btn-sm btn-outline-danger ms-1 disabled" title="No se puede eliminar: tiene reservas asociadas" aria-disabled="true">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                            {% else %}
+                                <a href="{% url 'actividad_delete' actividad.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="fa-solid fa-trash"></i></a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">No hay actividades registradas todavía.</td>
+                        <td colspan="2" class="text-center py-4 text-muted">No hay actividades registradas todavía.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('actividad-search-form');
+        var button = document.getElementById('actividad-search-btn');
+        if (!form || !button) {
+            return;
+        }
+
+        form.addEventListener('submit', function () {
+            button.classList.add('is-loading');
+            var label = button.querySelector('.search-btn-label');
+            var spinner = button.querySelector('.search-btn-spinner');
+            if (label) {
+                label.classList.add('d-none');
+            }
+            if (spinner) {
+                spinner.classList.remove('d-none');
+            }
+        });
+    });
+</script>
 {% endblock %}

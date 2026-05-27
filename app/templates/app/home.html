@@ -109,9 +109,9 @@
 
     .calendar-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(110px, 1fr));
-        gap: 8px;
-        min-width: 780px;
+        grid-template-columns: repeat(7, minmax(92px, 1fr));
+        gap: 6px;
+        min-width: 650px;
     }
 
     .calendar-day-name {
@@ -119,32 +119,44 @@
         font-weight: 700;
         color: var(--cad-text);
         opacity: 0.7;
-        padding: 5px;
-        font-size: 0.8rem;
+        padding: 4px 2px;
+        font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
     .calendar-day {
-        aspect-ratio: 1.15;
+        aspect-ratio: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        gap: 4px;
-        border-radius: 10px;
+        gap: 3px;
+        border-radius: 9px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
         position: relative;
-        font-size: 1rem;
+        font-size: 0.92rem;
         color: var(--cad-text);
-        padding: 10px 5px;
+        padding: 8px 4px;
     }
 
     .calendar-day.other-month {
         color: var(--cad-gray);
         font-weight: 400;
+    }
+
+    .calendar-day.empty {
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    .calendar-day.empty:hover {
+        transform: none;
+        background: transparent;
     }
 
     .calendar-day:hover:not(.other-month):not(.today) {
@@ -173,14 +185,14 @@
         align-items: center;
         justify-content: center;
         gap: 5px;
-        font-size: 0.75rem;
+        font-size: 0.68rem;
         font-weight: 700;
         text-align: center;
-        line-height: 1.2;
+        line-height: 1.1;
     }
 
     .calendar-day.has-event .activity-time {
-        font-size: 0.7rem;
+        font-size: 0.64rem;
         font-weight: 500;
         opacity: 0.85;
         text-align: center;
@@ -193,27 +205,39 @@
 
     .event-dot {
         position: absolute;
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         background-color: var(--cad-yellow);
         border-radius: 50%;
-        bottom: 6px;
+        bottom: 5px;
     }
 
     .calendar-day.today .event-dot {
         box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
     }
 
-    .mockup-note {
-        margin-top: 14px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        background: var(--cad-background);
-        color: var(--cad-text);
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-align: center;
-        border: 1px dashed var(--cad-gray);
+    .day-reservation-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        width: 100%;
+        margin-top: 4px;
+    }
+
+    .day-reservation {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        align-items: center;
+        justify-content: center;
+        padding: 3px 4px;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.45);
+    }
+
+    .calendar-day.today .day-reservation {
+        background: rgba(255, 255, 255, 0.12);
     }
 
     @media (max-width: 768px) {
@@ -285,91 +309,45 @@
     <!-- Columna Calendario -->
     <div class="col-md-12">
         <div class="dashboard-card">
-            
             <div class="card-header-flex">
                 <h2>Tus próximas clases</h2>
                 <div class="header-actions">
-                    <span class="date-badge">10 - 16 Mayo</span>
+                    <span class="date-badge">{{ rango_semana }}</span>
                     <a href="{% url 'clases_disponibles' %}" class="btn-cta-small">
                         <i class="fa-solid fa-ticket"></i>
                         <span>Nueva Reserva</span>
                     </a>
                 </div>
             </div>
-            
-            <!-- Wrapper agregado para el Scroll Horizontal Responsivo -->
-
             <div class="calendar-wrapper">
-
                 <div class="calendar-grid">
+                    {% for dia in dias_semana %}
+                    <div class="calendar-day-name">{{ dia.nombre_dia }}</div>
+                    {% endfor %}
+                    {% for dia in dias_semana %}
+                    <div class="calendar-day current-month{% if dia.es_hoy %} today{% endif %}{% if dia.reservas %} has-event{% endif %}" {% if dia.es_hoy %}title="Hoy"{% endif %}>
+                        {{ dia.fecha.day }}
 
-                    <div class="calendar-day-name">Dom</div>
-
-                    <div class="calendar-day-name">Lun</div>
-
-                    <div class="calendar-day-name">Mar</div>
-
-                    <div class="calendar-day-name">Mié</div>
-
-                    <div class="calendar-day-name">Jue</div>
-
-                    <div class="calendar-day-name">Vie</div>
-
-                    <div class="calendar-day-name">Sáb</div>
-
-                   
-
-                    <div class="calendar-day current-month">10</div>
-
-                    <div class="calendar-day current-month">11</div>
-
-                    <div class="calendar-day current-month">12</div>
-
-                   
-
-                    <div class="calendar-day current-month has-event">13
-
-                        <span class="activity-name"><i class="fa-solid fa-table-tennis-paddle-ball"></i> Tenis</span>
-
-                        <span class="activity-time">13:00-14:00 hs</span>
-
+                        <div class="day-reservation-list">
+                            {% for reserva in dia.reservas %}
+                            <div class="day-reservation">
+                                <span class="activity-name">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                    {{ reserva.actividad }}
+                                </span>
+                                <span class="activity-time">
+                                    {{ reserva.hora_inicio|time:"H:i" }}-{{ reserva.hora_fin|time:"H:i" }} hs
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if dia.reservas %}
                         <span class="event-dot"></span>
-
+                        {% endif %}
                     </div>
-
-                   
-
-                    <div class="calendar-day current-month today has-event" title="Hoy">14
-
-                        <span class="activity-name"><i class="fa-solid fa-futbol"></i> Fútbol</span>
-
-                        <span class="activity-time">14:00-15:00 hs</span>
-
-                        <span class="event-dot"></span>
-
-                    </div>
-
-                   
-
-                    <div class="calendar-day current-month">15</div>
-
-                   
-
-                    <div class="calendar-day current-month has-event">16
-
-                        <span class="activity-name"><i class="fa-solid fa-person-swimming"></i> Natación</span>
-
-                        <span class="activity-time">18:00-19:00 hs</span>
-
-                        <span class="event-dot"></span>
-
-                    </div>
-
+                    {% endfor %}
                 </div>
-
             </div>
-
-            <div class="mockup-note">Maqueta de interfaz generada con ayuda de IA. Diseño ilustrativo, no funcional.</div>
         </div>
     </div>
     {% endif %}

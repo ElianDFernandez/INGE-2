@@ -4,9 +4,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.models import User
-from actividades.models import Actividad
-from django.utils import timezone
+
+from empleados.models import Empleado
+from socios.models import Socio
 
 # Create your views here.
 def test(request):
@@ -31,7 +31,7 @@ def registro(request):
 
 @login_required
 def home(request):
-    return render(request, 'app/home.html')
+    return render(request, 'app/home.html', contexto_home(request.user))
 
 @login_required
 def perfil(request):
@@ -50,12 +50,13 @@ def perfil(request):
 
     return render(request, 'app/perfil.html')
 
-def home_view(request):
-    # Trae todas las actividades de la base de datos
-    actividades_reales = Actividad.objects.all() 
-    
-    # Se la pasamos al HTML
-    return render(request, 'app/home.html', {
-        'actividades': actividades_reales
-    })
+def contexto_home(usuario):
+    socio = Socio.objects.filter(pk=usuario.pk).first()
+    if socio:
+        return socio.get_contexto_home()
 
+    empleado = Empleado.objects.filter(pk=usuario.pk).first()
+    if empleado:
+        return empleado.get_contexto_home()
+
+    return {}

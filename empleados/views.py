@@ -17,7 +17,12 @@ class EmpleadosListView(ListView):
     context_object_name = 'empleados'
 
     def get_queryset(self):
-        return super().get_queryset().filter(is_superuser=False)
+        queryset = Empleado.objects.filter(is_superuser=False).order_by('username')
+        busqueda = self.request.GET.get('busqueda', '')
+        if busqueda:
+            queryset = queryset.filter(username__icontains=busqueda) | queryset.filter(email__icontains=busqueda)
+
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

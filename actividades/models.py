@@ -6,3 +6,10 @@ class Actividad(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def tiene_reservas(self):
+        from reservas.models import Reserva, EstadoReserva
+
+        return Reserva.objects.filter(
+            clase_programada__clase__turno__actividad=self
+        ).exclude(estado=EstadoReserva.CANCELADA).exists()

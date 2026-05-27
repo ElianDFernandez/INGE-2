@@ -88,7 +88,7 @@
 
                                {% if clase_programada.id in clases_reservadas_ids %}
                                 <a href="#" class="btn btn-sm btn-secondary disabled" style="width: 120px;" tabindex="-1" aria-disabled="true">
-                                    <i class="fa-solid fa-check me-1"></i>Inscripto
+                                    <i class="fa-solid fa-check me-1"></i>Reservado
                                 </a>
                             {% else %}
                                 <a href="{% url 'reserva_confirm' clase_programada.pk %}" class="btn btn-sm btn-main-cad" style="width: 120px;">

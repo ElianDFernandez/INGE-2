@@ -3,55 +3,104 @@
 {% block title %}Buscador de Socios - CAD{% endblock %}
 
 {% block content %}
-<div class="mt-4">
-    <h2 style="color: var(--cad-primary);" class="mb-4">
-         Socios
-    </h2>
+<style>
+    @keyframes searchPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.97); }
+        100% { transform: scale(1); }
+    }
 
-    <div class="card shadow-sm border-0 mb-4 bg-light">
-        <div class="card-body">
-            <form method="GET" class="row g-2">
-                <div class="col-md-9">
-                    <input type="text" name="q" class="form-control" placeholder="Buscar por nombre de usuario o correo electrónico..." value="{{ q }}">
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-main-cad w-100">
-                        <i class="fa-solid fa-magnifying-glass me-2"></i>Buscar Socio
+    .search-btn.is-loading {
+        animation: searchPulse 0.7s ease-in-out infinite;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+</style>
+
+<div class="mt-4 container-fluid px-0 px-md-3">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mx-3 mx-md-0 gap-3">
+        
+        <h2 style="color: var(--cad-primary);" class="mb-0">
+             Socios
+        </h2>
+
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <form method="GET" class="m-0 flex-grow-1" id="socio-search-form">
+                <div class="d-flex flex-nowrap gap-2">
+                    <input type="text" name="q" class="form-control flex-grow-1" placeholder="Buscar socio..." value="{{ q }}" title="Buscar por nombre de usuario o correo electrónico">
+                    <button type="submit" class="btn btn-main-cad btn-sm search-btn text-nowrap d-flex align-items-center justify-content-center" id="socio-search-btn">
+                        <span class="search-btn-label">
+                            <i class="fa-solid fa-magnifying-glass d-none d-sm-inline me-sm-2"></i>Buscar
+                        </span>
+                        <span class="search-btn-spinner d-none" aria-hidden="true">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        </span>
                     </button>
+                    {% if q %}
+                    <a href="{% url 'socio_list' %}" class="btn btn-outline-secondary btn-sm text-nowrap d-flex align-items-center">
+                        Limpiar
+                    </a>
+                    {% endif %}
                 </div>
             </form>
         </div>
+        
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0 mx-3 mx-md-0">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead style="background-color: var(--cad-primary); color: white;">
-                    <tr>
-                        <th class="ps-4">Nombre de Usuario</th>
-                        <th>Email</th>
-                        <th class="pe-4 text-end">Reservas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for socio in socios %}
-                    <tr>
-                        <td class="ps-4 fw-bold text-secondary">{{ socio.username }}</td>
-                        <td>{{ socio.email|default:"Sin registrar" }}</td>
-                        <td class="pe-4 text-end">
-                            <a href="{% url 'socio_reservas' socio.id %}" class="btn btn-sm btn-outline-primary" title="Inspeccionar Reservas">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center py-4 text-muted">No se encontraron socios con esos criterios de búsqueda.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle text-nowrap">
+                    <thead style="background-color: var(--cad-primary); color: white;">
+                        <tr>
+                            <th class="ps-4">Nombre de Usuario</th>
+                            <th>Email</th>
+                            <th class="pe-4 text-center text-md-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for socio in socios %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ socio.username }}</td>
+                            <td>{{ socio.email|default:"Sin registrar" }}</td>
+                            <td class="pe-4 text-center text-md-end">
+                                <a href="{% url 'socio_reservas' socio.id %}" class="btn btn-sm btn-outline-primary" title="Ver Reservas">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No se encontraron socios con esos criterios de búsqueda.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('socio-search-form');
+        var button = document.getElementById('socio-search-btn');
+        if (!form || !button) {
+            return;
+        }
+
+        form.addEventListener('submit', function () {
+            button.classList.add('is-loading');
+            var label = button.querySelector('.search-btn-label');
+            var spinner = button.querySelector('.search-btn-spinner');
+            if (label) {
+                label.classList.add('d-none');
+            }
+            if (spinner) {
+                spinner.classList.remove('d-none');
+            }
+        });
+    });
+</script>
 {% endblock %}

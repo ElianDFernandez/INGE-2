@@ -137,7 +137,10 @@
                 </div>
             </div>
             <div class="col-lg-5 text-center offset-lg-1">
-                <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));">
+                <video class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6)); border-radius:8px;" autoplay muted loop playsinline controls>
+                    <source src="{% static 'welcome.mp4' %}" type="video/mp4">
+                    <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));">
+                </video>
             </div>
         </div>
     </div>
