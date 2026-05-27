@@ -16,9 +16,11 @@ from turnos.models import Turno, Clase, ClaseProgramada
 
 @login_required
 def clases_disponibles(request):
+    hoy = timezone.localdate()
     actividades = Actividad.objects.prefetch_related(
         Prefetch('turno_set', queryset=Turno.objects.filter(activo=True).prefetch_related(
-        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True)))))
+        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).prefetch_related(
+        Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy)))))))
 
     clases_reservadas_ids = []
     if request.user.is_authenticated:
