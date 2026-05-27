@@ -38,7 +38,9 @@ class Turno(models.Model):
     def desactivar(self):
         self.activo = False
         self.save()
-        self.clase_set.update(activo=False)
+
+        for clase in self.clase_set.filter(activo=True):
+            clase.desactivar()
 
     def generar_clases_programadas(self):
         dias = {
@@ -81,6 +83,20 @@ class Clase(models.Model):
         return Reserva.objects.filter(
             clase_programada__clase=self
         ).exclude(estado=EstadoReserva.CANCELADA).exists()
+        
+    def desactivar(self):
+        from reservas.models import Reserva, EstadoReserva
+
+        self.activo = False
+        self.save()
+
+        # desactivo toda reserva activa de esta clase
+        Reserva.objects.filter(
+            clase_programada__clase=self, estado=EstadoReserva.ACTIVA).update(
+            estado=EstadoReserva.CANCELADA,
+            fecha_cancelacion=timezone.now()
+        )
+
 
 
 class ClaseProgramada(models.Model):
