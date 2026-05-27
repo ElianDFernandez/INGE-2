@@ -58,3 +58,18 @@ class Reserva(models.Model):
         ordering = ['estado', '-fecha_reserva']
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
+
+
+class EstadoInscripcion(models.TextChoices):
+    ACTIVA = 'ACTIVA', 'Activa'
+    DE_BAJA = 'DE_BAJA', 'De Baja'
+
+class Inscripcion(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    turno = models.ForeignKey('turnos.Turno', on_delete=models.CASCADE)
+
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+    fecha_baja = models.DateTimeField(null=True, blank=True)
+
+    estado = models.CharField(max_length=20, choices=EstadoInscripcion.choices, default=EstadoInscripcion.ACTIVA)
+    

@@ -7,8 +7,8 @@ from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
 
-from .models import Reserva, EstadoReserva
-from .forms import ReservaCancelForm, ReservaForm
+from .models import Reserva, EstadoReserva, Inscripcion
+from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
 
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
@@ -60,7 +60,8 @@ def reserva_confirm(request, clase_programada_pk):
 @login_required
 def reserva_list(request):
     reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad')
-    return render(request, 'reservas/reserva_list.html', {'reservas': reservas})
+    inscripciones = Inscripcion.objects.filter(user=request.user)
+    return render(request, 'reservas/reserva_list.html', {'reservas': reservas, 'inscripciones': inscripciones})
 
 @login_required
 def reserva_cancel(request, reserva_pk):
@@ -79,5 +80,80 @@ def reserva_cancel(request, reserva_pk):
     return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
 
 
+@login_required
+def turnos_disponibles(request):
+    hoy = timezone.localdate()
 
+    turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
+        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).prefetch_related(
+        Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy)))))
 
+    turnos_validos = []
+
+    # nomas muestro turnos que tienen cupo en todas las clases programadas (de este mes y del prox, cambiar?)
+    for turno in turnos:
+        turno_valido = True
+        for clase in turno.clase_set.all():
+            for cp in clase.claseprogramada_set.all():
+                if cp.cupo_actual() >= clase.cupo_maximo:
+                    turno_valido = False
+                    break
+            if not turno_valido:
+                break
+
+        if turno_valido:
+            turnos_validos.append(turno)
+
+    # me quedo con las inscripciones del usuario asi no le permito volver a inscribirse a esos turnos
+    inscripciones_ids = Inscripcion.objects.filter(
+        user=request.user,
+        estado='ACTIVA'
+    ).values_list('turno_id', flat=True) # flat para pasar de tuplas con una sola componente a enteros
+
+    return render(request, 'turnos_disponibles.html', {
+        'turnos': turnos_validos,
+        'inscripciones_ids': list(inscripciones_ids)
+    })
+
+@login_required
+def inscripcion_confirm(request, turno_pk):
+    turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
+
+    if request.method == 'POST':
+        form = InscripcionForm(request.POST, user=request.user, turno=turno)
+
+        if form.is_valid():
+            inscripcion = form.save(commit=False)
+
+            inscripcion.user = request.user
+            inscripcion.turno = turno
+
+            inscripcion.save()
+            return redirect('turnos_disponibles')
+
+    else:
+        form = InscripcionForm(user=request.user, turno=turno)
+
+    return render(request, 'inscripciones/inscripcion_confirm.html', {
+        'form': form,
+        'turno': turno
+    })
+
+@login_required
+def inscripcion_cancel(request, inscripcion_pk):
+    inscripcion = get_object_or_404(Inscripcion, pk=inscripcion_pk, user=request.user, estado='ACTIVA')
+
+    if request.method == 'POST':
+        form = InscripcionCancelForm(request.POST)
+        if form.is_valid():
+            inscripcion.estado = 'DE_BAJA'
+            inscripcion.fecha_baja = timezone.now()
+            inscripcion.save()
+            return redirect('reserva_list')
+    else:
+        form = InscripcionCancelForm()
+
+    return render(request, 'inscripciones/inscripcion_cancel.html', {
+        'form': form,
+        'inscripcion': inscripcion
+    })
