@@ -1,7 +1,8 @@
+from datetime import timedelta
 from django.db import models
+from django.utils import timezone
 from actividades.models import Actividad
 from django.core.validators import MinValueValidator
-
 class DiaSemana(models.TextChoices):
     LUNES = 'LUNES', 'Lunes'
     MARTES = 'MARTES', 'Martes'
@@ -10,7 +11,6 @@ class DiaSemana(models.TextChoices):
     VIERNES = 'VIERNES', 'Viernes'
     SABADO = 'SABADO', 'Sábado'
     DOMINGO = 'DOMINGO', 'Domingo'
-
 
 class Espacio(models.TextChoices):
     CANCHA_COMBINADA = 'CANCHA_COMBINADA', 'Cancha Combinada'
@@ -33,6 +33,30 @@ class Turno(models.Model):
 
     def tiene_clases(self):
         return self.clase_set.exists()
+    
+    def generar_clases_programadas(self):
+        dias = {
+            'LUNES': 0,
+            'MARTES': 1,
+            'MIERCOLES': 2,
+            'JUEVES': 3,
+            'VIERNES': 4,
+            'SABADO': 5,
+            'DOMINGO': 6,
+        }
+
+        for clase in self.clase_set.all():
+            fecha = timezone.localdate()
+            cur_mes = timezone.localdate().month
+            prox_mes = (cur_mes + 1) if cur_mes < 12 else 1
+
+            # me paro en el proximo dia de la semana que le corresponde a esta clase
+            while fecha.weekday() != dias[clase.dia]:
+                fecha += timedelta(days=1)
+            
+            while (fecha.month == cur_mes) or (fecha.month == prox_mes):
+                ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha)
+                fecha += timedelta(days=7)
 
 
 class Clase(models.Model):
@@ -50,18 +74,6 @@ class Clase(models.Model):
         return Reserva.objects.filter(
             clase_programada__clase=self
         ).exclude(estado=EstadoReserva.CANCELADA).exists()
-    
-    def dia_numero(self): # usado para generar las clases programadas
-        dias = {
-            'LUNES': 0,
-            'MARTES': 1,
-            'MIERCOLES': 2,
-            'JUEVES': 3,
-            'VIERNES': 4,
-            'SABADO': 5,
-            'DOMINGO': 6,
-        }
-        return dias[self.dia]
 
 
 class ClaseProgramada(models.Model):

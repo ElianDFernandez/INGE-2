@@ -2,6 +2,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 
 from django.contrib import messages
 from django.urls import reverse
@@ -12,17 +13,10 @@ from .forms import ReservaCancelForm, ReservaForm
 from actividades.models import Actividad
 from turnos.models import Clase, ClaseProgramada
 
-
+@login_required
 def clases_disponibles(request):
-    for clase in Clase.objects.all():
-        for i in range(14): 
-            fecha = timezone.localdate() + timedelta(days=i)
-            if fecha.weekday() == clase.dia_numero():
-                # si no existía la creo
-                ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha) 
-    
     actividades = Actividad.objects.prefetch_related('turno_set__clase_set')
-    # --- NUEVA LÓGICA PARA EL BOTÓN ---
+
     clases_reservadas_ids = []
     if request.user.is_authenticated:
         # Buscamos las reservas activas de este usuario y sacamos solo los IDs de las clases

@@ -27,7 +27,7 @@ class TurnoActividadRequiredMixin(EmpleadoRequiredMixin):
 def placeholder(request):
     return HttpResponse("Página en construcción")
 
-# Crea al turno con su clase asociada
+# Crea al turno con su clase asociada, y genera las clases de este mes
 def create_turno(request):
     if request.method == 'POST':
         turno_form = TurnoForm(request.POST, user=request.user)
@@ -44,6 +44,7 @@ def create_turno(request):
 
             clase.turno = turno
             clase.save()
+            turno.generar_clases_programadas()
 
             return redirect('turno_list')
     else:

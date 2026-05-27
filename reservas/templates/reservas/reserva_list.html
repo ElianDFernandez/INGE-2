@@ -13,95 +13,155 @@
 
     </div>
 
-    {% if reservas %}
+    <!-- Apartado de clases individuales -->
+    <div class="card shadow-sm border-0 mb-4">
 
-    <div class="card shadow-sm border-0">
+        <!-- desplegable -->
+        <div class="card-body">
 
-        <div class="card-body p-0">
+            <button
+                class="btn p-0 border-0 bg-transparent text-start w-100"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse-clases"
+                aria-expanded="true">
 
-            <table class="table table-hover mb-0">
+                <i class="fa-solid fa-chevron-down me-2"></i>
 
-                <thead class="table-light">
+                <span class="fw-bold fs-4">
+                    Clases Individuales
+                </span>
 
-                    <tr>
-                        <th class="ps-4">Actividad</th>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Espacio</th>
-                        <th>Estado</th>
-                        <th class="text-end pe-4">Acciones</th>
-                    </tr>
+            </button>
 
-                </thead>
+        </div>
 
-                <tbody>
+        <div class="collapse show" id="collapse-clases">
 
-                    {% for reserva in reservas %}
+            <div class="card-body pt-0">
 
-                    <tr>
+                {% if reservas %}
 
-                        <td class="ps-4">
-                            {{ reserva.clase_programada.clase.turno.actividad.nombre }}
-                        </td>
+                <table class="table table-hover mb-0">
 
-                        <td>
-                            {{ reserva.clase_programada.fecha }}
-                        </td>
+                    <thead class="table-light">
 
-                        <td>
-                            {{ reserva.clase_programada.clase.hora_inicio }}
-                            -
-                            {{ reserva.clase_programada.clase.hora_fin }}
-                        </td>
+                        <tr>
+                            <th class="ps-4">Actividad</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Espacio</th>
+                            <th>Estado</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
 
-                        <td>
-                            {{ reserva.clase_programada.clase.get_espacio_display }}
-                        </td>
+                    </thead>
 
-                        <td>
-                            {{ reserva.get_estado_display }}
-                        </td>
+                    <tbody>
 
-                        <td class="text-end pe-4">
+                        {% for reserva in reservas %}
 
-                            {% if reserva.estado == 'ACTIVA' %}
+                        <tr>
 
-                            <a href="{% url 'reserva_cancel' reserva.pk %}"
-                               class="btn btn-sm btn-outline-danger">
+                            <td class="ps-4">
+                                {{ reserva.clase_programada.clase.turno.actividad.nombre }}
+                            </td>
 
-                                <i class="fa-solid fa-xmark me-1"></i>
-                                Cancelar
-                            </a>
+                            <td>
+                                {{ reserva.clase_programada.fecha }}
+                            </td>
 
-                            {% endif %}
+                            <td>
+                                {{ reserva.clase_programada.clase.hora_inicio }}
+                                -
+                                {{ reserva.clase_programada.clase.hora_fin }}
+                            </td>
 
-                        </td>
+                            <td>
+                                {{ reserva.clase_programada.clase.get_espacio_display }}
+                            </td>
 
-                    </tr>
+                            <td>
+                                {{ reserva.get_estado_display }}
+                            </td>
 
-                    {% endfor %}
+                            <td class="text-end pe-4">
 
-                </tbody>
+                                {% if reserva.estado == 'ACTIVA' %}
 
-            </table>
+                                <a href="{% url 'reserva_cancel' reserva.pk %}"
+                                    class="btn btn-sm btn-outline-danger">
+
+                                    <i class="fa-solid fa-xmark me-1"></i>
+                                    Cancelar
+                                </a>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+                {% else %}
+
+                <div class="text-center py-4 text-muted">
+
+                    No tenés reservas de clases registradas.
+
+                </div>
+
+                {% endif %}
+
+            </div>
 
         </div>
 
     </div>
 
-    {% else %}
+    <!-- Apartado Turno...como esta en desarollo lo de inscripcion a turnos,solo muestra un msj vacio-->
+    <div class="card shadow-sm border-0 mb-4">
 
-    <div class="card shadow-sm border-0">
+        <!-- desplegable -->
+        <div class="card-body">
 
-        <div class="card-body text-center py-4 text-muted">
+            <button
+                class="btn p-0 border-0 bg-transparent text-start w-100"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse-turnos"
+                aria-expanded="false">
 
-            No tenés reservas registradas.
+                <i class="fa-solid fa-chevron-down me-2"></i>
+
+                <span class="fw-bold fs-4">
+                    Turnos (En desarrollo)
+                </span>
+
+            </button>
+
+        </div>
+
+        <div class="collapse" id="collapse-turnos">
+
+            <div class="card-body pt-0">
+
+                <div class="text-center py-4 text-muted">
+
+                    No tenés turnos reservados.
+
+                </div>
+
+            </div>
 
         </div>
 
     </div>
-
-    {% endif %}
 
 </div>
 {% endblock %}
