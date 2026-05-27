@@ -24,9 +24,6 @@ class TurnoActividadRequiredMixin(EmpleadoRequiredMixin):
         turno = self.get_object()
         return EmpleadoActividad.objects.filter(empleado=user, actividad=turno.actividad).exists()
 
-def placeholder(request):
-    return HttpResponse("Página en construcción")
-
 # Crea al turno con su clase asociada, y genera las clases de este mes
 def create_turno(request):
     if request.method == 'POST':
@@ -68,6 +65,7 @@ class TurnoListView(EmpleadoRequiredMixin, ListView):
             .select_related("actividad")
             .prefetch_related("clase_set")
             .order_by("actividad__nombre", "nombre")
+            .filter(activo=True)
         )
 
     def get_context_data(self, **kwargs):
@@ -90,25 +88,36 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
     form_class = TurnoForm
     template_name = 'turnos/turno_edit.html'
     success_url = reverse_lazy('turno_list')
+
+    def get_queryset(self):
+        return Turno.objects.filter(activo=True)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user # Le pasamos el usuario actual al form
         return kwargs
 
+# Soft Delete, turno y clases asociadas se desactivan (pero siguen estando en la DB)
 class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     model = Turno
     template_name = 'turnos/turno_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
 
+    def get_queryset(self):
+        return Turno.objects.filter(activo=True)
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+
         if self.object.tiene_reservas():
             messages.error(
                 request,
-                f'No se puede eliminar el turno "{self.object.nombre}" porque tiene reservas asociadas.'
+                f'No se puede eliminar el turno "{self.object.nombre}" porque tiene reservas activas asociadas.'
             )
             return redirect(self.success_url)
-        return super().post(request, *args, **kwargs)
+        
+        self.object.desactivar()
+        return redirect(self.success_url)
 
 class ClaseCreateView(EmpleadoRequiredMixin, CreateView):
     model = Clase
@@ -131,6 +140,9 @@ class ClaseUpdateView(EmpleadoRequiredMixin, UpdateView):
     form_class = ClaseForm
     template_name = 'clases/clase_form.html'
 
+    def get_queryset(self):
+        return Clase.objects.filter(activo=True)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['actividad'] = self.object.turno.actividad
@@ -148,6 +160,9 @@ class ClaseDeleteView(EmpleadoRequiredMixin, DeleteView):
     model = Clase
     template_name = 'clases/clase_confirm_delete.html'
     success_url = reverse_lazy('turno_list')
+
+    def get_queryset(self):
+        return Clase.objects.filter(activo=True)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()

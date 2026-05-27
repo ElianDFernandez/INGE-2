@@ -23,6 +23,7 @@ class Espacio(models.TextChoices):
 class Turno(models.Model):
     actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
+    activo = models.BooleanField(default=True)
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva
@@ -34,6 +35,11 @@ class Turno(models.Model):
     def tiene_clases(self):
         return self.clase_set.exists()
     
+    def desactivar(self):
+        self.activo = False
+        self.save()
+        self.clase_set.update(activo=False)
+
     def generar_clases_programadas(self):
         dias = {
             'LUNES': 0,
@@ -67,6 +73,7 @@ class Clase(models.Model):
     hora_fin = models.TimeField()
     costo = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)])
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    activo = models.BooleanField(default=True)
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva
