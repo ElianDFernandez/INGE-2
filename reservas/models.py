@@ -74,8 +74,6 @@ class Inscripcion(models.Model):
     estado = models.CharField(max_length=20, choices=EstadoInscripcion.choices, default=EstadoInscripcion.ACTIVA)
 
     def reservar_clases_programadas(self):
-        from turnos.models import ClaseProgramada
-
         clases_prog = self.turno.get_clases_programadas().filter(
             fecha__gte = timezone.localdate()
         )
@@ -87,8 +85,6 @@ class Inscripcion(models.Model):
     
 
     def cancelar_clases_programadas(self):
-        from turnos.models import ClaseProgramada
-
         clases_prog = self.turno.get_clases_programadas().filter(
             fecha__gte = timezone.localdate()
         )

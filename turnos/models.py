@@ -46,7 +46,7 @@ class Turno(models.Model):
             clase.desactivar()
 
     def generar_clases_programadas(self):
-        for clase in self.get_clases_activas:
+        for clase in self.get_clases_activas():
             clase.generar_clases_programadas()
 
     def admite_inscripcion(self, user):
@@ -107,7 +107,30 @@ class Clase(models.Model):
         return Reserva.objects.filter(
             clase_programada__clase=self
         ).exclude(estado=EstadoReserva.CANCELADA).exists()
-        
+
+    def tiene_reservas_proximas(self):
+        from datetime import datetime
+        from reservas.models import Reserva, EstadoReserva
+
+        ahora = timezone.now()
+        fecha_limite = ahora + timedelta(hours=24)
+
+        reservas = Reserva.objects.filter(clase_programada__clase=self,  estado=EstadoReserva.ACTIVA)
+
+        # combinamos fecha y hora de cada reserva
+        for reserva in reservas:
+            fecha_hora_clase = timezone.make_aware(
+                datetime.combine(
+                    reserva.clase_programada.fecha,
+                    self.hora_inicio
+                )
+            )
+            
+            # toda clase cuya fecha cae entre hoy y 24 horas despues no puede ser editada
+            if ahora <= fecha_hora_clase <= fecha_limite:
+                return True
+        return False
+
     def desactivar(self):
         from reservas.models import Reserva, EstadoReserva
 

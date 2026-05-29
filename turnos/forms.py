@@ -92,7 +92,6 @@ class ClaseForm(forms.ModelForm):
         # no pueden haber clases de la misma actividad que se superpongan en el tiempo
         if actividad and dia and hora_inicio and hora_fin:
             clases = Clase.objects.filter(turno__actividad=actividad, dia=dia, activo=True).exclude(pk=self.instance.pk)
-            print("ENTRA")
             for clase in clases:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
                     raise forms.ValidationError('Ya existe una clase de esta actividad durante el horario elegido.')
@@ -105,5 +104,8 @@ class ClaseForm(forms.ModelForm):
             for clase in clases:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
                     raise forms.ValidationError('El espacio seleccionado se encuentra en uso durante el horario elegido.')
+        
+        if self.instance.pk and self.instance.tiene_reservas_proximas():
+            raise forms.ValidationError('No se puede modificar una clase con reservas activas en las próximas 24 horas.')
 
         return cleaned_data
