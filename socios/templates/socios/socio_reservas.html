@@ -10,16 +10,6 @@
             <i class="fa-solid fa-arrow-left me-1"></i> Volver al Buscador
         </a>
     </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show mx-3 mx-md-0" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
     <div class="card shadow-sm border-0 mx-3 mx-md-0">
         <div class="card-body p-0">
             <div class="table-responsive">

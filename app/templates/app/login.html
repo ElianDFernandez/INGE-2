@@ -8,11 +8,6 @@
         <div class="card shadow-sm border-0">
             <div class="card-body p-4">
                 <h3 class="text-center mb-4 fs-3 fw-bold">Bienvenido</h3>
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-success py-2 small">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
                 {% if form.errors %}
                     <div class="alert alert-danger py-2 small text-center">
                         <i class="fa-solid fa-triangle-exclamation me-1"></i> Usuario o contraseña incorrectos.

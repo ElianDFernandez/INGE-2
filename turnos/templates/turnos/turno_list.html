@@ -69,7 +69,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for clase in turno.clase_set.all %}
+                                                {% for clase in turno.clases_activas %}
                                                 <tr>
                                                     <td class="ps-3 py-2">{{ clase.get_dia_display }}</td>
                                                     <td class="py-2">{{ clase.hora_inicio }} - {{ clase.hora_fin }}</td>

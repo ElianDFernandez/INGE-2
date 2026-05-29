@@ -34,6 +34,9 @@ class Turno(models.Model):
 
     def tiene_clases(self):
         return self.clase_set.exists()
+
+    def clases_activas(self):
+        return self.clase_set.filter(activo=True).order_by('dia', 'hora_inicio')
     
     def desactivar(self):
         self.activo = False
@@ -65,8 +68,6 @@ class Turno(models.Model):
             while (fecha.month == cur_mes) or (fecha.month == prox_mes):
                 ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha)
                 fecha += timedelta(days=7)
-
-
 class Clase(models.Model):
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
     dia = models.CharField(max_length=10, choices=DiaSemana.choices)
@@ -79,24 +80,45 @@ class Clase(models.Model):
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva
-
         return Reserva.objects.filter(
             clase_programada__clase=self
         ).exclude(estado=EstadoReserva.CANCELADA).exists()
         
-    def desactivar(self):
+    def desactivar(self, informar = False, motivo = ''):
         from reservas.models import Reserva, EstadoReserva
 
         self.activo = False
         self.save()
 
-        # desactivo toda reserva activa de esta clase
-        Reserva.objects.filter(
-            clase_programada__clase=self, estado=EstadoReserva.ACTIVA).update(
-            estado=EstadoReserva.CANCELADA,
-            fecha_cancelacion=timezone.now()
-        )
+        reservas_activas = Reserva.objects.filter(clase_programada__clase=self, estado=EstadoReserva.ACTIVA)
+        for reserva in reservas_activas:
+            reserva.desactivar()
 
+    def reemplazar_por_modificacion(self, nuevos_datos, informar = False, motivo = ''):
+        self.desactivar(informar, motivo)
+        nueva_clase = Clase.objects.create(
+            turno=self.turno,
+            dia=nuevos_datos['dia'],
+            espacio=nuevos_datos['espacio'],
+            hora_inicio=nuevos_datos['hora_inicio'],
+            hora_fin=nuevos_datos['hora_fin'],
+            costo=nuevos_datos['costo'],
+            cupo_maximo=nuevos_datos['cupo_maximo'],
+            activo=True
+        )
+        # -------------------------------------------------------------
+        # TODO: LÓGICA FUTURA
+        # Como por ejemplo los socios inscriptos a esta clase, que podrían pasar a la nueva clase o recibir una notificación, etc.
+        # -------------------------------------------------------------
+
+        return nueva_clase
+
+    def cancelacion_por_modificacion(self, informar = False, motivo = ''):
+        from reservas.models import Reserva, EstadoReserva
+        self.desactivar(informar, motivo)
+        reservas_activas = Reserva.objects.filter(clase_programada__clase=self, estado=EstadoReserva.ACTIVA)
+        for reserva in reservas_activas:
+            reserva.desactivar(informar, motivo)
 
 
 class ClaseProgramada(models.Model):

@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from .models import Clase, Turno
 from .forms import TurnoForm, ClaseForm
 from empleados.models import EmpleadoActividad
+from django.db.models import Prefetch
 
 # Esta clase verifica que el usuario sea empleado (is_staff) o administrador (is_superuser)
 class EmpleadoRequiredMixin(UserPassesTestMixin):
@@ -26,76 +27,182 @@ class TurnoActividadRequiredMixin(EmpleadoRequiredMixin):
 
 # Crea al turno con su clase asociada, y genera las clases de este mes
 def create_turno(request):
+    clase_forms = []
+    cupo_global = ''
     if request.method == 'POST':
         turno_form = TurnoForm(request.POST, user=request.user)
-       
-        actividad = None
-        if(turno_form.is_valid()):
+        
+        if turno_form.is_valid():
             actividad = turno_form.cleaned_data['actividad']
+            
+            dias = request.POST.getlist('dia')
+            espacios = request.POST.getlist('espacio')
+            horas_inicio = request.POST.getlist('hora_inicio')
+            horas_fin = request.POST.getlist('hora_fin')
+            costos = request.POST.getlist('costo')            
+            cupo_global = request.POST.get('cupo_maximo')
+            
+            clases_validas = []
+            hay_errores = False
+            
+            # 3. Recorremos y armamos cada clase
+            for i in range(len(dias)):
+                clase_data = {
+                    'dia': dias[i],
+                    'espacio': espacios[i],
+                    'hora_inicio': horas_inicio[i],
+                    'hora_fin': horas_fin[i],
+                    'costo': costos[i],
+                    'cupo_maximo': cupo_global  # Mismo cupo para todas las clases del turno
+                }
+                
+                clase_form = ClaseForm(clase_data, actividad=actividad)
+                clase_forms.append(clase_form)
+                
+                if clase_form.is_valid():
+                    clases_validas.append(clase_form.save(commit=False))
+                else:
+                    hay_errores = True
+                    for error in clase_form.non_field_errors():
+                        messages.error(request, f"Error en la Clase {i+1}: {error}")
+            
+            if not hay_errores and clases_validas:
+                turno = turno_form.save()
+                for clase in clases_validas:
+                    clase.turno = turno
+                    clase.save()
+                    
+                turno.generar_clases_programadas()
+                return redirect('turno_list')
+        else:
+            actividad = None
+            dias = request.POST.getlist('dia')
+            espacios = request.POST.getlist('espacio')
+            horas_inicio = request.POST.getlist('hora_inicio')
+            horas_fin = request.POST.getlist('hora_fin')
+            costos = request.POST.getlist('costo')
+            cupo_global = request.POST.get('cupo_maximo')
 
-        clase_form = ClaseForm(request.POST, actividad=actividad)
-
-        if (turno_form.is_valid() and clase_form.is_valid()):
-            turno = turno_form.save()
-            clase = clase_form.save(commit=False)
-
-            clase.turno = turno
-            clase.save()
-            turno.generar_clases_programadas()
-
-            return redirect('turno_list')
+            for i in range(len(dias)):
+                clase_data = {
+                    'dia': dias[i],
+                    'espacio': espacios[i],
+                    'hora_inicio': horas_inicio[i],
+                    'hora_fin': horas_fin[i],
+                    'costo': costos[i],
+                    'cupo_maximo': cupo_global
+                }
+                clase_forms.append(ClaseForm(clase_data, actividad=actividad))
     else:
         turno_form = TurnoForm(user=request.user)
-        clase_form = ClaseForm()
+        clase_forms = [ClaseForm()]
+        cupo_global = ''
 
     return render(request, 'create_turno.html', {
         'turno_form': turno_form,
-        'clase_form': clase_form
+        'clase_forms': clase_forms,
+        'cupo_maximo': cupo_global
     })
-
 class TurnoListView(EmpleadoRequiredMixin, ListView):
     model = Turno
     template_name = "turnos/turno_list.html"
     context_object_name = "turnos"
 
     def get_queryset(self):
+        clases_activas = Prefetch(
+            "clase_set", 
+            queryset=Clase.objects.filter(activo=True)
+        )
+
         return (
-            super()
-            .get_queryset()
+            super().get_queryset()
             .select_related("actividad")
-            .prefetch_related("clase_set")
-            .order_by("actividad__nombre", "nombre")
+            .prefetch_related(clases_activas)
             .filter(activo=True)
+            .order_by("actividad__nombre", "nombre")
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["actividades_asignadas_ids"] = set(
-            EmpleadoActividad.objects.filter(empleado=self.request.user)
-            .values_list("actividad_id", flat=True)
+            EmpleadoActividad.objects.filter(empleado=self.request.user).values_list("actividad_id", flat=True)
         )
         context["turnos_con_reservas_ids"] = set(
-            Turno.objects.filter(
-                clase__claseprogramada__reserva__isnull=False
-            ).exclude(
-                clase__claseprogramada__reserva__estado='CANCELADA'
-            ).values_list("id", flat=True).distinct()
+            Turno.objects.filter(clase__claseprogramada__reserva__isnull=False).exclude(clase__claseprogramada__reserva__estado='CANCELADA').values_list("id", flat=True).distinct()
         )
         return context
-
 class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
     model = Turno
     form_class = TurnoForm
     template_name = 'turnos/turno_edit.html'
     success_url = reverse_lazy('turno_list')
 
-    def get_queryset(self):
-        return Turno.objects.filter(activo=True)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 1. Buscamos las clases actuales y creamos un formulario por cada una
+        clases = self.object.clase_set.filter(activo=True)
+        formularios_clases = [ClaseForm(instance=clase) for clase in clases]
+        context['clase_forms'] = formularios_clases
+        context['clase_form_molde'] = ClaseForm() # Molde vacío para el JavaScript
+        # Enviamos el cupo general (tomando el de la primera clase)
+        context['cupo_maximo'] = clases.first().cupo_maximo if clases.exists() else ''
+        return context
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user # Le pasamos el usuario actual al form
-        return kwargs
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        turno_form = self.get_form()
+        if turno_form.is_valid():
+            clase_ids = request.POST.getlist('clase_id')
+            dias = request.POST.getlist('dia')
+            espacios = request.POST.getlist('espacio')
+            horas_inicio = request.POST.getlist('hora_inicio')
+            horas_fin = request.POST.getlist('hora_fin')
+            costos = request.POST.getlist('costo')
+            cupo_global = request.POST.get('cupo_maximo')
+            ids_recibidos = [int(i) for i in clase_ids if i.isdigit()]
+            # CANCELACION DE CLASES EXISTENTES NO RECIBIDAS
+            for clase in self.object.clase_set.filter(activo=True):
+                if clase.id not in ids_recibidos:
+                    clase.cancelacion_por_modificacion()
+            actividad = turno_form.cleaned_data['actividad']
+            hay_errores = False
+            
+            for i in range(len(dias)):
+                clase_data = {
+                    'dia': dias[i], 'espacio': espacios[i],
+                    'hora_inicio': horas_inicio[i], 'hora_fin': horas_fin[i],
+                    'costo': costos[i], 'cupo_maximo': cupo_global
+                }
+                c_id = clase_ids[i] if i < len(clase_ids) else ""
+                if c_id.isdigit():
+                    instancia_clase = Clase.objects.get(id=c_id)
+                    clase_form = ClaseForm(clase_data, instance=instancia_clase, actividad=actividad)
+                else: 
+                    clase_form = ClaseForm(clase_data, actividad=actividad) 
+                if clase_form.is_valid():
+                    if c_id.isdigit():
+                        # ACTUALIZACIÓN DE CLASE EXISTENTE
+                        if clase_form.has_changed():
+                            instancia_clase.reemplazar_por_modificacion(clase_form.cleaned_data)
+                    else:
+                        # CREACIÓN DE CLASE NUEVA
+                        clase = clase_form.save(commit=False)
+                        clase.turno = self.object
+                        clase.save()
+                else:
+                    hay_errores = True
+                    for error in clase_form.non_field_errors():
+                        messages.error(request, f"Error en horario {i+1}: {error}")
+
+            if not hay_errores:
+                turno_form.save()
+                self.object.generar_clases_programadas()
+                messages.success(request, 'Turno actualizado correctamente. Las clases modificadas cancelaron sus reservas antiguas.')
+                return redirect(self.success_url)
+            else:
+                return self.form_invalid(turno_form)
+        else:
+            return self.form_invalid(turno_form)
 
 # Soft Delete, turno y clases asociadas se desactivan (pero siguen estando en la DB)
 class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
