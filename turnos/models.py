@@ -33,7 +33,10 @@ class Turno(models.Model):
         ).exclude(estado=EstadoReserva.CANCELADA).exists()
 
     def tiene_clases(self):
-        return self.clase_set.exists()
+        return self.clase_set.filter(activo=True).exists()
+    
+    def get_clases_activas(self):
+        return self.clase_set.filter(activo=True)
     
     def desactivar(self):
         self.activo = False
@@ -43,33 +46,18 @@ class Turno(models.Model):
             clase.desactivar()
 
     def generar_clases_programadas(self):
-        dias = {
-            'LUNES': 0,
-            'MARTES': 1,
-            'MIERCOLES': 2,
-            'JUEVES': 3,
-            'VIERNES': 4,
-            'SABADO': 5,
-            'DOMINGO': 6,
-        }
+        for clase in self.get_clases_activas:
+            clase.generar_clases_programadas()
 
-        for clase in self.clase_set.filter(activo=True):
-            fecha = timezone.localdate()
-            cur_mes = timezone.localdate().month
-            prox_mes = cur_mes+1 if cur_mes<12 else 1
+    def admite_inscripcion(self, user):
+        from reservas.models import Reserva, EstadoReserva
 
-            # me paro en el proximo dia de la semana que le corresponde a esta clase
-            while fecha.weekday() != dias[clase.dia]:
-                fecha += timedelta(days=1)
-            
-            # editar if para que no chequee el prox mes, está solo para probar
-            while (fecha.month == cur_mes) or (fecha.month == prox_mes):
-                ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha)
-                fecha += timedelta(days=7)
+        for clase in self.get_clases_activas():
+            for cp in clase.claseprogramada_set.filter(fecha__gte=timezone.localdate()):
+                # si el usuario ya tiene reserva no me restringe la inscripcion
+                if Reserva.objects.filter(user=user, clase_programada=cp, estado=EstadoReserva.ACTIVA).exists():
+                    continue
 
-    def admite_inscripcion(self):
-        for clase in self.clase_set.filter(activo=True):
-            for cp in clase.claseprogramada_set.all():
                 if cp.cupo_actual() >= clase.cupo_maximo:
                     return False
         return True
@@ -89,6 +77,29 @@ class Clase(models.Model):
     costo = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     activo = models.BooleanField(default=True)
+
+    def generar_clases_programadas(self):
+        dias = {
+            'LUNES': 0,
+            'MARTES': 1,
+            'MIERCOLES': 2,
+            'JUEVES': 3,
+            'VIERNES': 4,
+            'SABADO': 5,
+            'DOMINGO': 6,
+        }
+
+        fecha = timezone.localdate()
+        cur_mes = fecha.month
+        prox_mes = cur_mes + 1 if cur_mes < 12 else 1
+
+        while fecha.weekday() != dias[self.dia]:
+            fecha += timedelta(days=1)
+
+        # cambiar, nomas para testing
+        while (fecha.month==cur_mes) or (fecha.month==prox_mes):
+            ClaseProgramada.objects.get_or_create(clase=self, fecha=fecha)
+            fecha += timedelta(days=7)
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva

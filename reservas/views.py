@@ -92,7 +92,7 @@ def turnos_disponibles(request):
 
     # nomas muestro turnos que tienen cupo en todas las clases programadas de este me
     for turno in turnos:
-        if(turno.admite_inscripcion()):
+        if(turno.admite_inscripcion(request.user)):
             turnos_validos.append(turno)
 
     # me quedo con las inscripciones del usuario asi no le permito volver a inscribirse a esos turnos

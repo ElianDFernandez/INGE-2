@@ -36,7 +36,7 @@ class TurnoForm(forms.ModelForm):
 
         # por cada clase mia me fijo si hay alguna clase de la nueva actividad que se solape
         for clase in self.instance.clase_set.all():
-            clases = Clase.objects.filter(turno__actividad=nueva_actividad, dia=clase.dia).exclude(turno=self.instance)
+            clases = Clase.objects.filter(turno__actividad=nueva_actividad, dia=clase.dia, activo=True).exclude(turno=self.instance)
             for clase_aux in clases:
                 if (clase.hora_inicio < clase_aux.hora_fin and clase.hora_fin > clase_aux.hora_inicio):
                     raise forms.ValidationError('La clase se superpone con otra clase ya existente de la actividad seleccionada.')
@@ -91,7 +91,7 @@ class ClaseForm(forms.ModelForm):
 
         # no pueden haber clases de la misma actividad que se superpongan en el tiempo
         if actividad and dia and hora_inicio and hora_fin:
-            clases = Clase.objects.filter(turno__actividad=actividad, dia=dia).exclude(pk=self.instance.pk)
+            clases = Clase.objects.filter(turno__actividad=actividad, dia=dia, activo=True).exclude(pk=self.instance.pk)
             print("ENTRA")
             for clase in clases:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
@@ -100,7 +100,7 @@ class ClaseForm(forms.ModelForm):
 
         # no pueden haber clases en el mismo espacio que se superpongan en el tiempo
         if espacio and dia and hora_inicio and hora_fin:
-            clases = Clase.objects.filter(espacio=espacio, dia=dia).exclude(pk=self.instance.pk)
+            clases = Clase.objects.filter(espacio=espacio, dia=dia, activo=True).exclude(pk=self.instance.pk)
 
             for clase in clases:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):

@@ -57,7 +57,7 @@
                     <tbody>
 
                         {% for turno in actividad.turno_set.all %}
-                            {% for clase in turno.clase_set.all %}
+                            {% for clase in turno.get_clases_activas %}
                                 {% for clase_programada in clase.claseprogramada_set.all %}
 
                                 <tr>
