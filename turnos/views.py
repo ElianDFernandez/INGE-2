@@ -146,6 +146,7 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
         context['clase_form_molde'] = ClaseForm() # Molde vacío para el JavaScript
         # Enviamos el cupo general (tomando el de la primera clase)
         context['cupo_maximo'] = clases.first().cupo_maximo if clases.exists() else ''
+        context['puede_modificar'] = [clase.puede_modificar() for clase in clases] # Lista de booleanos para cada clase
         return context
 
     def post(self, request, *args, **kwargs):

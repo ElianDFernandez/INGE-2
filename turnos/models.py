@@ -94,6 +94,14 @@ class Clase(models.Model):
         for reserva in reservas_activas:
             reserva.desactivar()
 
+    def puede_modificar(self):
+        from reservas.models import Reserva, EstadoReserva
+        proxima_reserva = Reserva.objects.filter(clase_programada__clase=self, estado=EstadoReserva.ACTIVA).order_by('clase_programada__fecha').first()
+        if proxima_reserva:
+            tiempo_restante = proxima_reserva.fecha_reserva - timezone.now()
+            return tiempo_restante >= timedelta(hours=24)
+        return True
+    
     def reemplazar_por_modificacion(self, nuevos_datos, informar = False, motivo = ''):
         self.desactivar(informar, motivo)
         nueva_clase = Clase.objects.create(
