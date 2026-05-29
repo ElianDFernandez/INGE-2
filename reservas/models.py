@@ -58,3 +58,39 @@ class Reserva(models.Model):
         ordering = ['estado', '-fecha_reserva']
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
+
+
+class EstadoInscripcion(models.TextChoices):
+    ACTIVA = 'ACTIVA', 'Activa'
+    DE_BAJA = 'DE_BAJA', 'De Baja'
+
+class Inscripcion(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    turno = models.ForeignKey('turnos.Turno', on_delete=models.CASCADE)
+
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+    fecha_baja = models.DateTimeField(null=True, blank=True)
+
+    estado = models.CharField(max_length=20, choices=EstadoInscripcion.choices, default=EstadoInscripcion.ACTIVA)
+
+    def reservar_clases_programadas(self):
+        clases_prog = self.turno.get_clases_programadas().filter(
+            fecha__gte = timezone.localdate()
+        )
+
+        # si el usuario no tiene ya una reserva activa, le creo una
+        for clase in clases_prog:
+            if (not Reserva.objects.filter(user=self.user, clase_programada=clase, estado=EstadoReserva.ACTIVA).exists()):
+                Reserva.objects.create(user=self.user, clase_programada=clase)
+    
+
+    def cancelar_clases_programadas(self):
+        clases_prog = self.turno.get_clases_programadas().filter(
+            fecha__gte = timezone.localdate()
+        )
+
+        for clase in clases_prog:
+            Reserva.objects.filter(user=self.user, 
+                                   clase_programada=clase, 
+                                   estado=EstadoReserva.ACTIVA
+                                   ).update(estado=EstadoReserva.CANCELADA)
