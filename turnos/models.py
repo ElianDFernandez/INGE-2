@@ -105,8 +105,7 @@ class Clase(models.Model):
         from reservas.models import Reserva, EstadoReserva
 
         return Reserva.objects.filter(
-            clase_programada__clase=self
-        ).exclude(estado=EstadoReserva.CANCELADA).exists()
+            clase_programada__clase=self, estado=EstadoReserva.ACTIVA).exists()
 
     def tiene_reservas_proximas(self):
         from datetime import datetime
