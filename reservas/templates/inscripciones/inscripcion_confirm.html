@@ -28,35 +28,57 @@
 
                 </div>
 
-                <!-- información del turno -->
+                <!-- clases que se van a reservar -->
+
+                <h6 class="mb-3">
+                    Se harán las siguientes reservas:
+                </h6>
+
                 <table class="table">
+
                     <tbody>
-                    <tr>
-                        <th>Clases</th>
-                        <td>
 
-                            {% for clase in turno.clase_set.all %}
+                        {% for clase in clases_a_reservar %}
 
-                                <div class="mb-2">
-                                    <span class="fw-semibold">
-                                        {{ clase.get_dia_display }}
-                                    </span>
-                                    <span>
-                                        {{ clase.hora_inicio }} - {{ clase.hora_fin }}
-                                    </span>
-                                    <span class="text-muted">
-                                        ({{ clase.get_espacio_display }})
-                                    </span>
-                                </div>
+                        <tr>
 
-                            {% empty %}
+                            <td>
 
-                                <span class="text-muted">Sin clases asociadas</span>
+                                <span class="fw-semibold">
+                                    {{ clase.fecha }}
+                                </span>
 
-                            {% endfor %}
+                            </td>
 
-                        </td>
-                    </tr>
+                            <td>
+
+                                {{ clase.clase.hora_inicio }}
+                                -
+                                {{ clase.clase.hora_fin }}
+
+                            </td>
+
+                            <td>
+
+                                {{ clase.clase.get_espacio_display }}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td class="text-muted">
+
+                                No hay ninguna clase para reservar este mes.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
 
                     </tbody>
 

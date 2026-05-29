@@ -44,6 +44,7 @@ class InscripcionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
         self.turno = kwargs.pop('turno')
+        
         super().__init__(*args, **kwargs)
 
     def clean(self):

@@ -53,19 +53,32 @@ class Turno(models.Model):
             'DOMINGO': 6,
         }
 
-        for clase in self.clase_set.all():
+        for clase in self.clase_set.filter(activo=True):
             fecha = timezone.localdate()
             cur_mes = timezone.localdate().month
-            prox_mes = (cur_mes + 1) if cur_mes < 12 else 1
+            prox_mes = cur_mes+1 if cur_mes<12 else 1
 
             # me paro en el proximo dia de la semana que le corresponde a esta clase
             while fecha.weekday() != dias[clase.dia]:
                 fecha += timedelta(days=1)
             
+            # editar if para que no chequee el prox mes, está solo para probar
             while (fecha.month == cur_mes) or (fecha.month == prox_mes):
                 ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha)
                 fecha += timedelta(days=7)
 
+    def admite_inscripcion(self):
+        for clase in self.clase_set.filter(activo=True):
+            for cp in clase.claseprogramada_set.all():
+                if cp.cupo_actual() >= clase.cupo_maximo:
+                    return False
+        return True
+
+    def get_clases_programadas(self):
+        return ClaseProgramada.objects.filter(
+            clase__turno=self,
+            clase__activo=True
+        )
 
 class Clase(models.Model):
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
@@ -73,7 +86,7 @@ class Clase(models.Model):
     espacio = models.CharField(max_length=20, choices=Espacio.choices)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
-    costo = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)])
+    costo = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     activo = models.BooleanField(default=True)
 
@@ -96,8 +109,6 @@ class Clase(models.Model):
             estado=EstadoReserva.CANCELADA,
             fecha_cancelacion=timezone.now()
         )
-
-
 
 class ClaseProgramada(models.Model):
     clase = models.ForeignKey(Clase, on_delete=models.CASCADE)

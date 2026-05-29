@@ -48,6 +48,61 @@
                                 {{ inscripcion.fecha_alta }}
                             </td>
                         </tr>
+
+                    </tbody>
+
+                </table>
+
+                <h6 class="mb-3 mt-4">
+                    Se cancelarán las siguientes reservas:
+                </h6>
+
+                <table class="table">
+
+                    <tbody>
+
+                        {% for clase in clases_a_cancelar %}
+
+                        <tr>
+
+                            <td>
+
+                                <span class="fw-semibold">
+                                    {{ clase.fecha }}
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                {{ clase.clase.hora_inicio }}
+                                -
+                                {{ clase.clase.hora_fin }}
+
+                            </td>
+
+                            <td>
+
+                                {{ clase.clase.get_espacio_display }}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td class="text-muted">
+
+                                No hay reservas activas para cancelar.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
                     </tbody>
 
                 </table>

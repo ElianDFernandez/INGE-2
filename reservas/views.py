@@ -90,18 +90,9 @@ def turnos_disponibles(request):
 
     turnos_validos = []
 
-    # nomas muestro turnos que tienen cupo en todas las clases programadas (de este mes y del prox, cambiar?)
+    # nomas muestro turnos que tienen cupo en todas las clases programadas de este me
     for turno in turnos:
-        turno_valido = True
-        for clase in turno.clase_set.all():
-            for cp in clase.claseprogramada_set.all():
-                if cp.cupo_actual() >= clase.cupo_maximo:
-                    turno_valido = False
-                    break
-            if not turno_valido:
-                break
-
-        if turno_valido:
+        if(turno.admite_inscripcion()):
             turnos_validos.append(turno)
 
     # me quedo con las inscripciones del usuario asi no le permito volver a inscribirse a esos turnos
@@ -118,30 +109,41 @@ def turnos_disponibles(request):
 @login_required
 def inscripcion_confirm(request, turno_pk):
     turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
+    # muestro que clases se van a reservar si se inscribe al turno (excepto las que ya estan reservadas)
+    clases = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate()).exclude(
+        reserva__user = request.user,
+        reserva__estado = EstadoReserva.ACTIVA
+    )
 
     if request.method == 'POST':
         form = InscripcionForm(request.POST, user=request.user, turno=turno)
 
         if form.is_valid():
             inscripcion = form.save(commit=False)
-
             inscripcion.user = request.user
             inscripcion.turno = turno
-
             inscripcion.save()
-            return redirect('turnos_disponibles')
 
+            inscripcion.reservar_clases_programadas()
+            return redirect('turnos_disponibles')
     else:
         form = InscripcionForm(user=request.user, turno=turno)
 
     return render(request, 'inscripciones/inscripcion_confirm.html', {
         'form': form,
-        'turno': turno
+        'turno': turno,
+        'clases_a_reservar': clases
     })
 
 @login_required
 def inscripcion_cancel(request, inscripcion_pk):
     inscripcion = get_object_or_404(Inscripcion, pk=inscripcion_pk, user=request.user, estado='ACTIVA')
+    # muestro que clases se cancelarían si se cancela la inscripcion al turno (solo las activas)
+    clases_a_cancelar = inscripcion.turno.get_clases_programadas().filter(
+        fecha__gte=timezone.localdate(),
+        reserva__user=request.user,
+        reserva__estado=EstadoReserva.ACTIVA
+    )
 
     if request.method == 'POST':
         form = InscripcionCancelForm(request.POST)
@@ -149,11 +151,14 @@ def inscripcion_cancel(request, inscripcion_pk):
             inscripcion.estado = 'DE_BAJA'
             inscripcion.fecha_baja = timezone.now()
             inscripcion.save()
+
+            inscripcion.cancelar_clases_programadas()
             return redirect('reserva_list')
     else:
         form = InscripcionCancelForm()
 
     return render(request, 'inscripciones/inscripcion_cancel.html', {
         'form': form,
-        'inscripcion': inscripcion
+        'inscripcion': inscripcion,
+        'clases_a_cancelar': clases_a_cancelar
     })
