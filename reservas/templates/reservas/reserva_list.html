@@ -124,44 +124,105 @@
 
     </div>
 
-    <!-- Apartado Turno...como esta en desarollo lo de inscripcion a turnos,solo muestra un msj vacio-->
+    <!-- Apartado Turno-->
     <div class="card shadow-sm border-0 mb-4">
 
-        <!-- desplegable -->
-        <div class="card-body">
+    <!-- desplegable -->
+    <div class="card-body">
+        <button
+            class="btn p-0 border-0 bg-transparent text-start w-100"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#collapse-inscripciones"
+            aria-expanded="true">
 
-            <button
-                class="btn p-0 border-0 bg-transparent text-start w-100"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapse-turnos"
-                aria-expanded="false">
+            <i class="fa-solid fa-chevron-down me-2"></i>
 
-                <i class="fa-solid fa-chevron-down me-2"></i>
+            <span class="fw-bold fs-4">
+                Turnos
+            </span>
 
-                <span class="fw-bold fs-4">
-                    Turnos (En desarrollo)
-                </span>
+        </button>
 
-            </button>
+    </div>
 
-        </div>
+    <div class="collapse show" id="collapse-inscripciones">
 
-        <div class="collapse" id="collapse-turnos">
+        <div class="card-body pt-0">
 
-            <div class="card-body pt-0">
+            {% if inscripciones %}
 
-                <div class="text-center py-4 text-muted">
+            <table class="table table-hover mb-0">
 
-                    No tenés turnos reservados.
+                <thead class="table-light">
 
-                </div>
+                    <tr>
+                        <th class="ps-4">Actividad</th>
+                        <th>Turno</th>
+                        <th>Fecha de alta</th>
+                        <th>Estado</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
 
+                </thead>
+
+                <tbody>
+
+                    {% for inscripcion in inscripciones %}
+
+                    <tr>
+
+                        <td class="ps-4">
+                            {{ inscripcion.turno.actividad.nombre }}
+                        </td>
+
+                        <td>
+                            {{ inscripcion.turno.nombre }}
+                        </td>
+
+                        <td>
+                            {{ inscripcion.fecha_alta }}
+                        </td>
+
+
+                        <td>
+                            {{ inscripcion.get_estado_display }}
+                        </td>
+
+                        <td class="text-end pe-4">
+
+                            {% if inscripcion.estado == 'ACTIVA' %}
+
+                            <a href="{% url 'inscripcion_cancel' inscripcion.pk %}"
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="fa-solid fa-xmark me-1"></i>
+                                Dar de baja
+                            </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            {% else %}
+
+            <div class="text-center py-4 text-muted">
+                No tenés inscripciones a turnos.
             </div>
+
+            {% endif %}
 
         </div>
 
     </div>
 
 </div>
+
 {% endblock %}

@@ -46,6 +46,39 @@ class Turno(models.Model):
             clase.desactivar()
 
     def generar_clases_programadas(self):
+        for clase in self.get_clases_activas():
+            clase.generar_clases_programadas()
+
+    def admite_inscripcion(self, user):
+        from reservas.models import Reserva, EstadoReserva
+
+        for clase in self.get_clases_activas():
+            for cp in clase.claseprogramada_set.filter(fecha__gte=timezone.localdate()):
+                # si el usuario ya tiene reserva no me restringe la inscripcion
+                if Reserva.objects.filter(user=user, clase_programada=cp, estado=EstadoReserva.ACTIVA).exists():
+                    continue
+
+                if cp.cupo_actual() >= clase.cupo_maximo:
+                    return False
+        return True
+
+    def get_clases_programadas(self):
+        return ClaseProgramada.objects.filter(
+            clase__turno=self,
+            clase__activo=True
+        )
+
+class Clase(models.Model):
+    turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
+    dia = models.CharField(max_length=10, choices=DiaSemana.choices)
+    espacio = models.CharField(max_length=20, choices=Espacio.choices)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    costo = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
+    cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    activo = models.BooleanField(default=True)
+
+    def generar_clases_programadas(self):
         dias = {
             'LUNES': 0,
             'MARTES': 1,
@@ -56,35 +89,47 @@ class Turno(models.Model):
             'DOMINGO': 6,
         }
 
-        for clase in self.clase_set.all():
-            fecha = timezone.localdate()
-            cur_mes = timezone.localdate().month
-            prox_mes = (cur_mes + 1) if cur_mes < 12 else 1
+        fecha = timezone.localdate()
+        cur_mes = fecha.month
+        prox_mes = cur_mes + 1 if cur_mes < 12 else 1
 
-            # me paro en el proximo dia de la semana que le corresponde a esta clase
-            while fecha.weekday() != dias[clase.dia]:
-                fecha += timedelta(days=1)
-            
-            while (fecha.month == cur_mes) or (fecha.month == prox_mes):
-                ClaseProgramada.objects.get_or_create(clase=clase, fecha=fecha)
-                fecha += timedelta(days=7)
-class Clase(models.Model):
-    turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
-    dia = models.CharField(max_length=10, choices=DiaSemana.choices)
-    espacio = models.CharField(max_length=20, choices=Espacio.choices)
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    costo = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)])
-    cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1)])
-    activo = models.BooleanField(default=True)
+        while fecha.weekday() != dias[self.dia]:
+            fecha += timedelta(days=1)
+
+        # cambiar, nomas para testing
+        while (fecha.month==cur_mes) or (fecha.month==prox_mes):
+            ClaseProgramada.objects.get_or_create(clase=self, fecha=fecha)
+            fecha += timedelta(days=7)
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva
         return Reserva.objects.filter(
-            clase_programada__clase=self
-        ).exclude(estado=EstadoReserva.CANCELADA).exists()
-        
-    def desactivar(self, informar = False, motivo = ''):
+            clase_programada__clase=self, estado=EstadoReserva.ACTIVA).exists()
+
+    def tiene_reservas_proximas(self):
+        from datetime import datetime
+        from reservas.models import Reserva, EstadoReserva
+
+        ahora = timezone.now()
+        fecha_limite = ahora + timedelta(hours=24)
+
+        reservas = Reserva.objects.filter(clase_programada__clase=self,  estado=EstadoReserva.ACTIVA)
+
+        # combinamos fecha y hora de cada reserva
+        for reserva in reservas:
+            fecha_hora_clase = timezone.make_aware(
+                datetime.combine(
+                    reserva.clase_programada.fecha,
+                    self.hora_inicio
+                )
+            )
+            
+            # toda clase cuya fecha cae entre hoy y 24 horas despues no puede ser editada
+            if ahora <= fecha_hora_clase <= fecha_limite:
+                return True
+        return False
+
+    def desactivar(self):
         from reservas.models import Reserva, EstadoReserva
 
         self.activo = False
