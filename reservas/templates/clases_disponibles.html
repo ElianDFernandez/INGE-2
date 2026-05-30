@@ -35,7 +35,7 @@
         </div>
 
         <!-- clases -->
-        <div class="collapse" id="actividad-{{ actividad.pk }}">
+        <div class="collapse show" id="actividad-{{ actividad.pk }}">
 
             <div class="card-body pt-0">
 
@@ -57,7 +57,7 @@
                     <tbody>
 
                         {% for turno in actividad.turno_set.all %}
-                            {% for clase in turno.clase_set.all %}
+                            {% for clase in turno.get_clases_activas %}
                                 {% for clase_programada in clase.claseprogramada_set.all %}
 
                                 <tr>
