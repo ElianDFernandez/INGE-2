@@ -205,6 +205,13 @@ class ClaseProgramada(models.Model):
     def cupo_actual(self):
         # estado está hardcodeado y no lo saco del choices de reservas pq los import quedan circular
         return self.reserva_set.filter(estado='ACTIVA').count()
+    
+    @property
+    def ya_finalizo(self):
+        from datetime import datetime
+        fecha_hora_fin = datetime.combine(self.fecha, self.clase.hora_fin)
+        fecha_hora_fin_aware = timezone.make_aware(fecha_hora_fin)
+        return timezone.now() > fecha_hora_fin_aware
 
     class Meta:
         ordering = ['fecha', 'clase__hora_inicio']

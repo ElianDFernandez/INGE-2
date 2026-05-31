@@ -67,8 +67,10 @@
                                     {% if reserva.pago_confirmado %}
                                         <span class="badge bg-success"><i class="fa-solid fa-dollar-sign me-1"></i>Abonado</span>
                                         <small class="text-muted d-block" style="font-size: 0.70rem;">Vía: {{ reserva.get_metodo_pago_display }}</small>
+                                    {% elif reserva.clase_programada.ya_finalizo %}
+                                        <span class="badge bg-danger"><i class="fa-solid fa-circle-exclamation me-1"></i>Adeuda</span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        <span class="badge bg-warning text-dark"><i class="fa-regular fa-clock me-1"></i>Pendiente</span>
                                     {% endif %}
                                 {% else %}
                                     <span>-</span>
@@ -94,7 +96,7 @@
                                     
                                 {% else %}
                                     <div class="d-inline-flex">
-                                        {% if not reserva.asistio %}
+                                        {% if not reserva.asistio and not reserva.clase_programada.ya_finalizo %}
                                             <form action="{% url 'registrar_asistencia' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-success me-1 mb-1">
