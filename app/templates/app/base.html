@@ -253,16 +253,19 @@
     </main>
 
     <!-- PWA -->
-    <div id="pwa-install-banner" class="alert alert-dark position-fixed bottom-0 start-50 translate-middle-x m-3 shadow" style="display: none; z-index: 9999; min-width: 320px; background-color: #1a1f26; border: none;">
-        <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
+    <div id="pwa-install-banner" class="alert alert-dark position-fixed bottom-0 start-50 translate-middle-x m-3 shadow" style="display: none; z-index: 9999; width: max-content; max-width: 95vw; background-color: #1a1f26; border: none; border-radius: 12px; padding: 12px 16px;">
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <div class="d-flex align-items-center me-3 me-sm-4">
                 <img src="{% static 'app/pwa-icon-180.png' %}" alt="Logo CAD" class="me-3" style="width: 42px; height: 42px; border-radius: 8px;">
                 <div>
                     <strong class="d-block text-white" style="font-size: 0.95rem;">Instalá la App de CAD</strong>
                     <small style="color: var(--cad-gray); font-size: 0.8rem;">Gestioná tus turnos y reservas más rápido</small>
                 </div>
             </div>
-            <button id="btn-pwa-install" class="btn btn-sm btn-main-cad ms-3">Instalar</button>
+            <div class="d-flex align-items-center gap-3">
+                <button id="btn-pwa-install" class="btn btn-sm btn-main-cad text-nowrap">Instalar</button>
+                <button type="button" id="btn-pwa-close" class="btn-close btn-close-white" aria-label="Close" style="font-size: 0.75rem;"></button>
+            </div>
         </div>
     </div>
 
@@ -271,6 +274,7 @@
         let deferredPrompt;
         const installBanner = document.getElementById('pwa-install-banner');
         const installBtn = document.getElementById('btn-pwa-install');
+        const closeBtn = document.getElementById('btn-pwa-close');
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
@@ -281,8 +285,11 @@
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            deferredPrompt = e;
-            installBanner.style.display = 'block';
+            deferredPrompt = e;            
+            const pwaBannerClosed = sessionStorage.getItem('pwaBannerClosed');            
+            if (!pwaBannerClosed) {
+                installBanner.style.display = 'block';
+            }
         });
 
         installBtn.addEventListener('click', async () => {
@@ -291,6 +298,11 @@
             const { outcome } = await deferredPrompt.userChoice;
             deferredPrompt = null;
             installBanner.style.display = 'none';
+        });
+
+        closeBtn.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            sessionStorage.setItem('pwaBannerClosed', 'true');
         });
 
         window.addEventListener('appinstalled', () => {
