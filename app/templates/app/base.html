@@ -28,7 +28,7 @@
 
         body { 
             background-color: var(--cad-background); 
-            padding-top: 90px;
+            padding-top: 85px;
             color: var(--cad-text);
             font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
@@ -48,6 +48,17 @@
         .navbar-cad .navbar-brand:hover {
             transform: scale(1.05);
             opacity: 0.9;
+        }
+
+        .logo-img {
+            height: 40px;
+            transition: height 0.2s ease;
+        }
+
+        @media (min-width: 768px) {
+            .logo-img {
+                height: 50px;
+            }
         }
 
         .navbar-cad .nav-link {
@@ -114,10 +125,6 @@
         }
 
         @media (max-width: 991px) {
-            .navbar-brand {
-                white-space: normal;
-                max-width: 75%;
-            }
             .navbar-collapse {
                 background-color: var(--cad-primary);
                 padding: 1rem 0;
@@ -143,63 +150,48 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark navbar-cad fixed-top">
         <div class="container">
-            <!-- Logo -->
             <a class="navbar-brand d-flex align-items-center" href="{% url 'landing' %}">
-                {% if user.is_authenticated %}
-                    <img src="{% static 'logo.svg' %}" alt="Logo Institucional" height="50" class="d-inline-block align-text-top me-2">
-                {% else %}
-                    <img src="{% static 'logo.svg' %}" alt="Logo Institucional" height="50" class="d-inline-block align-text-top me-2"><span class="fw-semibold fs-5">Centro de Actividades</span>
+                <img src="{% static 'logo.svg' %}" alt="Logo Institucional" class="d-inline-block align-text-top me-2 logo-img">
+                {% if not user.is_authenticated %}
+                    <span class="fw-semibold fs-5 d-none d-md-block">Centro de Actividades</span>
                 {% endif %}
             </a>
-            <!-- Botón Hamburguesa -->
+            
             <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Navegación">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <!-- Menú Colapsable -->
+            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
                     {% if user.is_authenticated %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'actividades_list' %}">
-                                Actividades
-                            </a>
+                            <a class="nav-link" href="{% url 'actividades_list' %}">Actividades</a>
                         </li>
                         {% endif %}
                         {% if user.is_staff %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'turno_list' %}">
-                                Turnos
-                            </a>
+                            <a class="nav-link" href="{% url 'turno_list' %}">Turnos</a>
                         </li>
                         {% endif %}
                         {% if user.is_staff or user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'socio_list' %}">
-                                Socios
-                            </a>
+                            <a class="nav-link" href="{% url 'socio_list' %}">Socios</a>
                         </li>
                         {% endif %}
                         {% if user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'empleados_list' %}">
-                                Empleados
-                            </a>
+                            <a class="nav-link" href="{% url 'empleados_list' %}">Empleados</a>
                         </li>
                         {% endif %}
                         {% if not user.is_staff and not user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'reserva_list' %}">
-                                Mis Reservas
-                            </a>
+                            <a class="nav-link" href="{% url 'reserva_list' %}">Mis Reservas</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'reservas_disponibles' %}">
-                                Reservas Disponibles
-                            </a>
+                            <a class="nav-link" href="{% url 'reservas_disponibles' %}">Reservas Disponibles</a>
                         </li>
                         {% endif %}
-
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav align-items-lg-center">
@@ -215,7 +207,7 @@
                     {% else %}
                         <li class="nav-item dropdown mt-2 mt-lg-0">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa-solid fa-user me-1"></i>
+                                <i class="fa-solid fa-user me-2"></i>
                                 <span>{{ user.username }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">

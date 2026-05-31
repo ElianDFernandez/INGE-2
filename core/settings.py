@@ -26,8 +26,15 @@ SECRET_KEY = 'django-insecure-5$r15l2en+nlr4gvdbm$)s7spk^7#9$669a35)v)6z!hnv*@su
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://headpiece-public-unclog.ngrok-free.dev',
+    'https://*.ngrok-free.dev',
+    'https://*.ngrok-free.app',
+    'https://*.ngrok.app',
+    'https://*.ngrok.io'
+]
 
 # Application definition
 

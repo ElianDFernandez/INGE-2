@@ -21,14 +21,14 @@
             </div>
         </div>
 
-        <ul class="nav nav-tabs nav-fill mx-3 mx-md-0 mb-4" id="reservasTabs" role="tablist">
+        <ul class="nav nav-tabs nav-fill flex-nowrap mx-3 mx-md-0 mb-4" id="reservasTabs" role="tablist" style="overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold" id="turnos-tab" data-bs-toggle="tab" data-bs-target="#turnos-tab-pane" type="button" role="tab" aria-controls="turnos-tab-pane" aria-selected="true" style="color: var(--cad-primary);">
+                <button class="nav-link active fw-bold px-3 px-md-4" id="turnos-tab" data-bs-toggle="tab" data-bs-target="#turnos-tab-pane" type="button" role="tab" aria-controls="turnos-tab-pane" aria-selected="true" style="color: var(--cad-primary);">
                     Turnos Disponibles
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold" id="clases-tab" data-bs-toggle="tab" data-bs-target="#clases-tab-pane" type="button" role="tab" aria-controls="clases-tab-pane" aria-selected="false" style="color: var(--cad-primary);">
+                <button class="nav-link fw-bold px-3 px-md-4" id="clases-tab" data-bs-toggle="tab" data-bs-target="#clases-tab-pane" type="button" role="tab" aria-controls="clases-tab-pane" aria-selected="false" style="color: var(--cad-primary);">
                     Clases Individuales
                 </button>
             </li>
@@ -47,8 +47,12 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fa-solid fa-chevron-down me-2 text-muted" style="font-size: 0.9rem;"></i>
                                     <h5 class="fw-bold mb-0 text-dark text-start" style="color: var(--cad-primary);">{{ turno.nombre }}</h5>
+                                    {% if turno.usuario_inscripto %}
+                                        <span class="badge text-primary border-primary">
+                                            <i class="fa-solid fa-circle-check me-1"></i>
+                                        </span>
+                                    {% endif %}
                                 </div>
-                                
                                 <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
                                     <span class="badge text-bg-success bg-opacity-10 border text-dark fw-medium">{{ turno.actividad.nombre }}</span>
                                     {% if turno.clases_activas %}
@@ -63,11 +67,6 @@
                                         <i class="fa-solid fa-users me-1"></i> 
                                         {{ turno.cupos_ocupados }} / {{ turno.cupo_maximo }}
                                     </span>
-                                    {% if turno.usuario_inscripto %}
-                                        <span class="badge text-bg-primary text-primary bg-opacity-10 border fw-bold border-primary">
-                                            <i class="fa-solid fa-circle-check me-1"></i>
-                                        </span>
-                                    {% endif %}
                                 </div>
                             </button>
                         </div>
@@ -216,6 +215,13 @@
         border-bottom: none !important;
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
+    }
+    #reservasTabs::-webkit-scrollbar {
+        display: none;
+    }
+    #reservasTabs {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 </style>
 

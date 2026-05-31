@@ -24,9 +24,9 @@ class Socio(User):
 
     def get_contexto_home(self):
         hoy = timezone.localdate()
-        fin_semana = hoy + timezone.timedelta(days=6)
+        fin_rango_calendario = hoy + timezone.timedelta(days=6)
         reservas_semana = self.get_reservas_en_periodo(7).filter(estado='ACTIVA')
-
+        
         reservas_por_fecha = {}
         for reserva in reservas_semana:
             fecha = reserva.clase_programada.fecha
@@ -46,7 +46,23 @@ class Socio(User):
                 'es_hoy': fecha == hoy,
             })
 
+        clases_totales_mes = self.reservas.filter(
+            clase_programada__fecha__year=hoy.year,
+            clase_programada__fecha__month=hoy.month,
+            estado='ACTIVA'
+        )
+        
+        total_clases = clases_totales_mes.count()
+        asistencias = clases_totales_mes.filter(asistio=True).count()
+        
+        porcentaje_asistencia = 0
+        if total_clases > 0:
+            porcentaje_asistencia = int((asistencias / total_clases) * 100)
+
         return {
             'dias_semana': dias_semana,
-            'rango_semana': f"{hoy.strftime('%d/%m')} al {fin_semana.strftime('%d/%m')}",
+            'rango_semana': f"{hoy.strftime('%d/%m')} al {fin_rango_calendario.strftime('%d/%m')}",
+            'asistencias_mes': asistencias,
+            'total_clases_mes': total_clases,
+            'porcentaje_asistencia': porcentaje_asistencia,
         }

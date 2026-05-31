@@ -4,33 +4,31 @@
 
 {% block content %}
 <style>
-    /* Encabezado principal */
     .welcome-header {
-        background: linear-gradient(135deg, var(--cad-primary) 70%, var(--cad-secondary) 70%);
-        color: var(--cad-white);
-        padding: 40px 30px;
-        border-radius: 16px;
-        margin-bottom: 40px;
-        box-shadow: 0 10px 20px rgba(0, 67, 131, 0.15);
-        position: relative;
-        overflow: hidden;
+        padding: 20px 0 30px 0;
+        margin-bottom: 30px;
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
 
     .welcome-header h1 {
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin: 0 0 8px;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--cad-primary);
+        margin: 0 0 6px;
         letter-spacing: -0.5px;
     }
 
     .welcome-header p {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         margin: 0;
-        opacity: 0.9;
-        font-weight: 300;
+        color: var(--cad-text);
+        opacity: 0.6;
+        font-weight: 400;
     }
 
-    /* Tarjetas base */
     .dashboard-card {
         background: var(--cad-white);
         border-radius: 16px;
@@ -49,7 +47,7 @@
         justify-content: space-between;
         align-items: center;
         gap: 15px;
-        margin-bottom: 20px;
+        margin-bottom: 15px; 
         padding-bottom: 15px;
         border-bottom: 1px solid var(--cad-gray);
     }
@@ -98,6 +96,61 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 67, 131, 0.3);
         color: var(--cad-white);
+    }
+
+    .attendance-card {
+        padding: 20px 24px;
+    }
+
+    .attendance-tracker {
+        width: 100%;
+    }
+
+    .attendance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .attendance-title {
+        color: var(--cad-text);
+        font-size: 1rem;
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    .attendance-percentage {
+        color: var(--cad-primary);
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .attendance-progress-bg {
+        height: 8px;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .attendance-progress-bar {
+        background-color: var(--cad-yellow);
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1s ease-in-out;
+        background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+        background-size: 1rem 1rem;
+    }
+
+    .attendance-footer {
+        text-align: right;
+        font-size: 0.8rem;
+        color: var(--cad-text);
+        opacity: 0.7;
     }
 
     .calendar-wrapper {
@@ -152,11 +205,6 @@
         border: 1px solid transparent;
         cursor: default;
         pointer-events: none;
-    }
-
-    .calendar-day.empty:hover {
-        transform: none;
-        background: transparent;
     }
 
     .calendar-day:hover:not(.other-month):not(.today) {
@@ -242,7 +290,8 @@
 
     @media (max-width: 768px) {
         .welcome-header {
-            padding: 30px 20px;
+            padding: 10px 0 20px 0;
+            margin-bottom: 20px;
         }
 
         .welcome-header h1 {
@@ -276,7 +325,7 @@
 
     @media (max-width: 576px) {
         .welcome-header h1 {
-            font-size: 1.45rem;
+            font-size: 1.5rem;
         }
 
         .welcome-header p {
@@ -295,18 +344,87 @@
             justify-content: center;
             text-align: center;
         }
+
+        .attendance-card {
+            padding: 16px 18px;
+        }
+
+        .attendance-title {
+            font-size: 0.9rem;
+        }
+
+        .attendance-percentage {
+            font-size: 1rem;
+        }
+
+        .attendance-footer {
+            text-align: left;
+            font-size: 0.75rem;
+            margin-top: 6px;
+        }
     }
 </style>
 
-<!-- Encabezado de bienvenida -->
-<div class="welcome-header">
+<div class="welcome-header mx-3 mx-md-0">
     <h1>¡Hola, {{ user.username|default:"Usuario" }}! 👋</h1>
-    <p>Panel de control del Centro de Actividades Deportivas</p>
+    <p>Bienvenido al Centro de Actividades Deportivas</p>
 </div>
 
-<div class="row mb-5">
+<div class="row mb-2">
     {% if not user.is_staff and not user.is_superuser %}
-    <!-- Columna Calendario -->
+    {% if total_clases_mes > 0 %}
+    <div class="col-md-12 mb-2">
+        <div class="dashboard-card attendance-card">
+            <div class="attendance-tracker">
+                <div class="attendance-header">
+                    <span class="attendance-title">
+                        <i class="fa-solid fa-chart-pie me-2" style="color: var(--cad-primary);"></i> Tu progreso este mes
+                    </span>
+                    <span class="attendance-percentage">
+                        {{ porcentaje_asistencia }}% <i class="fa-solid fa-fire" style="color: var(--cad-yellow);"></i>
+                    </span>
+                </div>
+                <div class="attendance-progress-bg mb-2">
+                    <div class="attendance-progress-bar progress-bar-animated" 
+                        role="progressbar" 
+                        style="width: {{ porcentaje_asistencia }}%;" 
+                        aria-valuenow="{{ porcentaje_asistencia }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                    </div>
+                </div>
+                <div class="attendance-footer">
+                    Has asistido a <strong>{{ asistencias_mes }}</strong> de tus <strong>{{ total_clases_mes }}</strong> clases del mes
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-md-12 mb-2">
+        <div class="dashboard-card attendance-card">
+            <div class="attendance-tracker">
+                <div class="attendance-header">
+                    <span class="attendance-title">
+                        Tu progreso este mes
+                    </span>
+                    <span class="attendance-percentage" style="color: var(--cad-gray); opacity: 0.7;">
+                        0% <i class="fa-solid fa-fire" style="color: var(--cad-gray); opacity: 0.5;"></i>
+                    </span>
+                </div>
+                <div class="attendance-progress-bg mb-2" style="background-color: rgba(0, 0, 0, 0.04);">
+                    <div class="attendance-progress-bar" style="width: 0%; background-color: transparent;"></div>
+                </div>
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mt-3">
+                    <div class="attendance-footer" style="text-align: left;">
+                        Aún no tenés clases reservadas para este mes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+
     <div class="col-md-12">
         <div class="dashboard-card">
             <div class="card-header-flex">
@@ -317,8 +435,13 @@
                         <i class="fa-solid fa-ticket"></i>
                         <span>Nueva Reserva</span>
                     </a>
+                    <a href="{% url 'reserva_list' %}" class="btn-cta-small">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Mis Reservas</span>
+                    </a>
                 </div>
             </div>
+
             <div class="calendar-wrapper">
                 <div class="calendar-grid">
                     {% for dia in dias_semana %}
@@ -352,4 +475,5 @@
     </div>
     {% endif %}
 </div>
+
 {% endblock %}

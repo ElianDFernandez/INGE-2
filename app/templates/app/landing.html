@@ -6,9 +6,9 @@
 {% block content %}
 <style>
     .hero-section {
-        background: linear-gradient(135deg, var(--cad-primary) 70%, var(--cad-secondary) 70%);
+        background: linear-gradient(135deg, var(--cad-primary) 70%, var(--cad-secondary) 30%);
         color: var(--cad-white);
-        padding: 60px 0;
+        padding: 20px 0;
         border-radius: 12px;
         margin-bottom: 60px;
         overflow: hidden;
@@ -64,7 +64,7 @@
     }
 
     .feature-card:hover {
-        transform: translateY(-8px);
+        transform: translateY(-2px);
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
 
@@ -93,7 +93,7 @@
     .section-title {
         font-size: 2rem;
         font-weight: 700;
-        margin-bottom: 50px;
+        margin-bottom: 20px;
         text-align: center;
         color: #004383;
     }
@@ -123,10 +123,13 @@
 
 <div class="hero-section mb-5">
     <div class="container">
-        <div class="row align-items-center g-3">
-            <div class="col-lg-6 text-center text-lg-start">
-                <h1>TU CLUB EN UN SOLO LUGAR</h1>
-                <p>Gestiona tus actividades de manera fácil, rápida y segura.</p>
+        <div class="row align-items-center g-4">
+            <div class="col-lg-5 text-center">
+                <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 340px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.1));">
+            </div>
+            <div class="col-lg-6 offset-lg-1 text-center text-lg-start">
+                <h1 class="display-5 fw-bold mb-3">TU CLUB EN UN SOLO LUGAR</h1>
+                <p class="mb-4">Gestiona tus actividades de manera fácil, rápida y segura.</p>
                 <div class="d-flex gap-2 gap-lg-3 justify-content-center justify-content-lg-start flex-wrap">
                     <a href="{% url 'registro' %}" class="btn btn-light btn-lg-custom">
                         <i class="fa-solid fa-user-plus me-2"></i>Empieza ahora!
@@ -136,44 +139,45 @@
                     </a>
                 </div>
             </div>
-            <div class="col-lg-5 text-center offset-lg-1">
-                <video class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6)); border-radius:8px;" autoplay muted loop playsinline controls>
-                    <source src="{% static 'welcome.mp4' %}" type="video/mp4">
-                    <img src="{% static 'logo.svg' %}" alt="Logo Centro" class="img-fluid" style="max-width: 350px; filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));">
-                </video>
-            </div>
+
         </div>
     </div>
 </div>
 
-<section class="mb-5">
-    <h2 class="section-title">¿Por qué elegir nuestro sistema?</h2>
-    <div class="row g-4">
+<section class="mb-2">
+    <h2 class="section-title">¿Por qué elegirnos?</h2>
+    <div class="row g-2">
         <div class="col-md-6 col-lg-4">
-            <div class="feature-card card p-4 shadow-sm">
-                <div class="feature-icon text-primary">
+            <div class="feature-card card h-100 d-flex flex-row align-items-center p-3">
+                <div class="feature-icon text-primary me-3 mb-0">
                     <i class="fa-solid fa-mobile"></i>
                 </div>
-                <h5 class="fw-bold mb-2">Responsivo</h5>
-                <p class="text-muted">Accede desde cualquier dispositivo, en cualquier momento.</p>
+                <div>
+                    <h5 class="fw-bold mb-1">Responsivo</h5>
+                    <p class="text-muted small mb-0">Accede desde cualquier celular o PC.</p>
+                </div>
             </div>
         </div>
         <div class="col-md-6 col-lg-4">
-            <div class="feature-card card p-4 shadow-sm">
-                <div class="feature-icon" style="color: #5DA515;">
+            <div class="feature-card card h-100 d-flex flex-row align-items-center p-3">
+                <div class="feature-icon me-3 mb-0" style="color: #5DA515;">
                     <i class="fa-solid fa-basketball"></i>
                 </div>
-                <h5 class="fw-bold mb-2">Actividades</h5>
-                <p class="text-muted">Reserva, organiza y gestiona tus actividades.</p>
+                <div>
+                    <h5 class="fw-bold mb-1">Actividades</h5>
+                    <p class="text-muted small mb-0">Organiza todas tus disciplinas.</p>
+                </div>
             </div>
         </div>
         <div class="col-md-6 col-lg-4">
-            <div class="feature-card card p-4 shadow-sm">
-                <div class="feature-icon" style="color: #FEBD00;">
+            <div class="feature-card card h-100 d-flex flex-row align-items-center p-3">
+                <div class="feature-icon me-3 mb-0" style="color: #FEBD00;">
                     <i class="fa-solid fa-calendar-days"></i>
                 </div>
-                <h5 class="fw-bold mb-2">Calendario</h5>
-                <p class="text-muted">Visualiza tus clases reservadas en un solo lugar.</p>
+                <div>
+                    <h5 class="fw-bold mb-1">Calendario</h5>
+                    <p class="text-muted small mb-0">Controla tus turnos fácilmente.</p>
+                </div>
             </div>
         </div>
     </div>
