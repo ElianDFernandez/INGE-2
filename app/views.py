@@ -25,12 +25,17 @@ def pwa_manifest(request):
                 "background_color": "#F9F9F9",
                 "theme_color": "#004383",
                 "icons": [
-                        {
-                                "src": "/static/app/pwa-icon.svg",
-                                "sizes": "512x512",
-                                "type": "image/svg+xml",
-                                "purpose": "any maskable",
-                        }
+                    {
+                        "src": "/static/app/pwa-icon.svg",
+                        "sizes": "512x512",
+                        "type": "image/svg+xml",
+                        "purpose": "any maskable",
+                    },
+                    {
+                        "src": "/static/app/pwa-icon-180.png",
+                        "sizes": "180x180",
+                        "type": "image/png"
+                    }
                 ],
         }
         response = HttpResponse(json.dumps(manifest), content_type='application/manifest+json')
@@ -49,6 +54,7 @@ const APP_SHELL = [
     '/static/icon.svg',
     '/static/logo.svg',
     '/static/app/pwa-icon.svg',
+    '/static/app/pwa-icon-180.png', // AGREGADO al caché de la App Shell
 ];
 
 const OFFLINE_HTML = `
