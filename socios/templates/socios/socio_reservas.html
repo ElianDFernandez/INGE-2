@@ -5,7 +5,7 @@
 {% block content %}
 <div class="mt-4 container-fluid px-0 px-md-3">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mx-3 mx-md-0 gap-3">
-        <h2 style="color: var(--cad-primary);" class="mb-0">Reservas: {{ socio.username }}</h2>
+        <h2 style="color: var(--cad-primary);" class="mb-0">Reservas de {{ socio.username }}</h2>
         <a href="{% url 'socio_list' %}" class="btn btn-outline-secondary btn-sm text-nowrap d-flex align-items-center">
             <i class="fa-solid fa-arrow-left me-1"></i> Volver al Buscador
         </a>
@@ -20,14 +20,70 @@
         {% endfor %}
     {% endif %}
 
-    <div class="card shadow-sm border-0 mx-3 mx-md-0">
-        <div class="card-body p-0">
+    <!-- Vista de turnos de socio -->
+    <div class="card shadow-sm border-0 mx-3 mx-md-0 mb-4">
+        <div class="card-body">
+            <button class="btn p-0 border-0 bg-transparent text-start w-100 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-turnos" aria-expanded="true">
+                <i class="fa-solid fa-chevron-down me-2"></i>
+                <h4 class="mb-0 fw-bold" style="color: var(black);">Turnos reservados</h4>
+            </button>
+        </div>
+
+        <div class="collapse show" id="collapse-turnos">
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle text-nowrap">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Actividad</th>
+                                <th>Turno</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inscripcion in inscripciones %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ inscripcion.turno.actividad.nombre }}</td>
+                                <td>{{ inscripcion.turno.nombre }}</td>
+                                <td>
+                                    {% if inscripcion.estado == 'ACTIVA' %}
+                                        <span class="badge bg-success">{{inscripcion.estado}}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Cancelada</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No se registran turnos o abonos fijos para este socio.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de clases de socio -->
+    <div class="card shadow-sm border-0 mx-3 mx-md-0 mb-4">
+        <div class="card-body">
+            <button class="btn p-0 border-0 bg-transparent text-start w-100 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-clases" aria-expanded="true">
+                <i class="fa-solid fa-chevron-down me-2"></i>
+                <h4 class="mb-0 fw-bold" style="color: var(black);">Clases reservadas</h4>
+            </button>
+            <p class="text-muted small mb-0 mt-2 ms-4">Incluye reservas individuales y sesiones automáticas de sus turnos fijos.</p>
+        </div>
+
+        <div class="collapse show" id="collapse-clases">
+        <div class="card-body pt-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle text-nowrap">
-                    <thead style="background-color: var(--cad-primary); color: white;">
+                    <thead class="table-light">
                         <tr>
                             <th class="ps-4">Fecha Clase</th>
                             <th>Disciplina</th>
+                            <th>Turno</th>
                             <th>Horario</th>
                             <th>Estado</th>
                             <th>Asistencia</th>
@@ -40,6 +96,7 @@
                         <tr class="{% if reserva.estado|lower == 'cancelada' %}text-muted{% endif %}">
                             <td class="ps-4 fw-bold">{{ reserva.clase_programada.fecha|date:"d/m/Y" }}</td>
                             <td>{{ reserva.clase_programada.clase.turno.actividad.nombre|default:"-" }}</td>
+                            <td>{{ reserva.clase_programada.clase.turno.nombre }} </td>
                             <td>{{ reserva.clase_programada.clase.hora_inicio|time:"H:i" }} hs</td>
                             <td>
                                 {% if reserva.estado|lower == 'cancelada' %}
@@ -124,6 +181,7 @@
                 </table>
             </div>
         </div>
-    </div>
+        </div>
+    </div> 
 </div>
 {% endblock %}

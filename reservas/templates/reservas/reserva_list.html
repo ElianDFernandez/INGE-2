@@ -48,11 +48,12 @@
 
                         <tr>
                             <th class="ps-4">Actividad</th>
+                            <th>Turno</th>
                             <th>Fecha</th>
                             <th>Horario</th>
                             <th>Espacio</th>
                             <th>Estado</th>
-                            <th class="text-end pe-4">Acciones</th>
+                            <th class="text-end pe-4" style ="width: 130px;">Acciones</th>
                         </tr>
 
                     </thead>
@@ -65,6 +66,10 @@
 
                             <td class="ps-4">
                                 {{ reserva.clase_programada.clase.turno.actividad.nombre }}
+                            </td>
+                            
+                            <td>
+                                {{ reserva.clase_programada.clase.turno.nombre }}
                             </td>
 
                             <td>

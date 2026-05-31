@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib import messages
-from reservas.models import Reserva
+from reservas.models import Reserva,Inscripcion 
 from socios.models import Socio
 
 # 1. LISTADO GENERAL DE SOCIOS + BUSCADOR
@@ -33,9 +33,11 @@ def socio_reservas(request, socio_id):
     # Traigo el historial de reservas de este usuario particular
     socio = get_object_or_404(User, id=socio_id)
     reservas = Reserva.objects.filter(user=socio).order_by('-clase_programada__fecha', '-clase_programada__clase__hora_inicio')
+    inscripciones = Inscripcion.objects.filter(user=socio) 
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
-        'reservas': reservas})
+        'reservas': reservas,
+        'inscripciones': inscripciones})
 
 # 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
 @login_required
