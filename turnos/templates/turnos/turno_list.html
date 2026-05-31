@@ -45,9 +45,17 @@
                                 <a href="{% url 'turno_edit' turno.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Turno">
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
-                                <a href="{% url 'turno_delete' turno.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Turno">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
+                                    {% if not turno.tiene_reservas %}
+                                        <a href="{% url 'turno_delete' turno.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Turno">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="d-inline-block ms-1" tabindex="0" data-bs-toggle="tooltip" title="Este turno tiene reservas activas asociadas">
+                                            <button class="btn btn-sm btn-outline-danger m-0" disabled style="pointer-events: none;">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

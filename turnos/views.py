@@ -139,7 +139,6 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 1. Buscamos las clases actuales y creamos un formulario por cada una
         clases = self.object.clase_set.filter(activo=True)
         formularios_clases = [ClaseForm(instance=clase) for clase in clases]
         context['clase_forms'] = formularios_clases
@@ -160,6 +159,11 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
             horas_fin = request.POST.getlist('hora_fin')
             costos = request.POST.getlist('costo')
             cupo_global = request.POST.get('cupo_maximo')
+            cupo_int = int(cupo_global) if cupo_global and cupo_global.isdigit() else 0
+            reservas_maximas = self.object.max_reservas_actuales()
+            if cupo_int < reservas_maximas:
+                messages.error(request, f"No puedes reducir el cupo a {cupo_int}. Ya existen clases programadas con reservas activas.")
+                return self.form_invalid(turno_form)
             ids_recibidos = [int(i) for i in clase_ids if i.isdigit()]
             # CANCELACION DE CLASES EXISTENTES NO RECIBIDAS
             for clase in self.object.clase_set.filter(activo=True):

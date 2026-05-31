@@ -3,7 +3,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
-
 from django.contrib import messages
 from django.urls import reverse
 
@@ -15,43 +14,47 @@ from turnos.models import Turno, Clase, ClaseProgramada
 
 
 @login_required
-def clases_disponibles(request):
+def reservas_disponibles(request):
     hoy = timezone.localdate()
-    actividades = Actividad.objects.prefetch_related(
-        Prefetch('turno_set', queryset=Turno.objects.filter(activo=True).prefetch_related(
-        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).prefetch_related(
-        Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy)))))))
+    # CLASES INDIVIDUALES
+    clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
+    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
+    # TURNOS
+    turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
+        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).order_by('dia', 'hora_inicio').prefetch_related(
+            Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy).order_by('fecha'))
+        ))
+    )
+    for turno in turnos:
+        turno.usuario_inscripto = turno.esta_inscripto(request.user)
 
-    clases_reservadas_ids = []
-    if request.user.is_authenticated:
-        # Buscamos las reservas activas de este usuario y sacamos solo los IDs de las clases
-        clases_reservadas_ids = Reserva.objects.filter(
-            user=request.user
-        ).filter(
-            estado=EstadoReserva.ACTIVA
-        ).values_list('clase_programada_id', flat=True)
+    actividades_filtro = Actividad.objects.all().order_by('nombre')
 
-    return render(request, 'clases_disponibles.html', {
-        'actividades': actividades,
-        'clases_reservadas_ids': list(clases_reservadas_ids) # Lo pasamos al HTML
+    inscripciones_ids = Inscripcion.objects.filter(
+        user=request.user,
+        estado='ACTIVA'
+    ).values_list('turno_id', flat=True)
+
+    return render(request, 'reservas_disponibles.html', {
+        'clases_programadas': clases_programadas,
+        'clases_reservadas_ids': list(clases_reservadas_ids),
+        'turnos': turnos,
+        'inscripciones_ids': list(inscripciones_ids),
+        'actividades_filtro': actividades_filtro
     })
 
 @login_required
 def reserva_confirm(request, clase_programada_pk):
     clase_programada = get_object_or_404(ClaseProgramada, pk=clase_programada_pk, clase__activo=True, clase__turno__activo=True)
-
     if request.method == 'POST':
         form = ReservaForm(request.POST, user=request.user, clase_programada=clase_programada)
-
         if form.is_valid():
             reserva = form.save(commit=False)
-
             reserva.user = request.user
             reserva.clase_programada = clase_programada
-
             reserva.save()
-            return redirect('clases_disponibles')
-
+            messages.success(request, f'¡Excelente! Tu reserva para el {clase_programada.clase.get_dia_display()} a las {clase_programada.clase.hora_inicio} hs ha sido confirmada.')
+            return redirect('reservas_disponibles')
     else:
         form = ReservaForm(user=request.user, clase_programada=clase_programada)
 
@@ -59,9 +62,13 @@ def reserva_confirm(request, clase_programada_pk):
 
 @login_required
 def reserva_list(request):
-    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad')
+    hoy = timezone.localdate()
+    reservas = Reserva.objects.filter(user=request.user,clase_programada__fecha__gte=hoy).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
     inscripciones = Inscripcion.objects.filter(user=request.user)
-    return render(request, 'reservas/reserva_list.html', {'reservas': reservas, 'inscripciones': inscripciones})
+    return render(request, 'reservas/reserva_list.html', {
+        'reservas': reservas, 
+        'inscripciones': inscripciones
+    })
 
 @login_required
 def reserva_cancel(request, reserva_pk):
@@ -79,37 +86,9 @@ def reserva_cancel(request, reserva_pk):
 
     return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
 
-
-@login_required
-def turnos_disponibles(request):
-    hoy = timezone.localdate()
-
-    turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
-        Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).prefetch_related(
-        Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy)))))
-
-    turnos_validos = []
-
-    # nomas muestro turnos que tienen cupo en todas las clases programadas de este me
-    for turno in turnos:
-        if(turno.admite_inscripcion(request.user)):
-            turnos_validos.append(turno)
-
-    # me quedo con las inscripciones del usuario asi no le permito volver a inscribirse a esos turnos
-    inscripciones_ids = Inscripcion.objects.filter(
-        user=request.user,
-        estado='ACTIVA'
-    ).values_list('turno_id', flat=True) # flat para pasar de tuplas con una sola componente a enteros
-
-    return render(request, 'turnos_disponibles.html', {
-        'turnos': turnos_validos,
-        'inscripciones_ids': list(inscripciones_ids)
-    })
-
 @login_required
 def inscripcion_confirm(request, turno_pk):
     turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
-    # muestro que clases se van a reservar si se inscribe al turno (excepto las que ya estan reservadas)
     clases = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate()).exclude(
         reserva__user = request.user,
         reserva__estado = EstadoReserva.ACTIVA
@@ -123,9 +102,9 @@ def inscripcion_confirm(request, turno_pk):
             inscripcion.user = request.user
             inscripcion.turno = turno
             inscripcion.save()
-
             inscripcion.reservar_clases_programadas()
-            return redirect('turnos_disponibles')
+            messages.success(request, f'¡Genial! Te inscribiste con éxito al turno {turno.nombre} de {turno.actividad.nombre}.')
+            return redirect('reservas_disponibles')
     else:
         form = InscripcionForm(user=request.user, turno=turno)
 

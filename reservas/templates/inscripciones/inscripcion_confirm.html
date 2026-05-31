@@ -5,116 +5,65 @@
 {% block content %}
 
 <div class="row justify-content-center mt-4">
-
     <div class="col-md-7">
-
         <div class="card shadow-sm border-0">
-
             <div class="card-header bg-white">
-
                 <h3 style="color: var(--cad-primary);">
                     Confirmar Inscripción
                 </h3>
-
             </div>
-
             <div class="card-body">
-
                 <div class="mb-3">
-
                     <h5>
                         {{ turno.nombre }} - {{ turno.actividad.nombre }}
                     </h5>
-
                 </div>
-
-                <!-- clases que se van a reservar -->
-
                 <h6 class="mb-3">
                     Se harán las siguientes reservas:
                 </h6>
-
                 <table class="table">
-
                     <tbody>
-
                         {% for clase in clases_a_reservar %}
-
                         <tr>
-
                             <td>
-
                                 <span class="fw-semibold">
                                     {{ clase.fecha }}
                                 </span>
-
                             </td>
-
                             <td>
-
                                 {{ clase.clase.hora_inicio }}
                                 -
                                 {{ clase.clase.hora_fin }}
-
                             </td>
-
                             <td>
-
                                 {{ clase.clase.get_espacio_display }}
-
                             </td>
-
                         </tr>
-
                         {% empty %}
-
                         <tr>
-
                             <td class="text-muted">
-
                                 No hay ninguna clase para reservar este mes.
-
                             </td>
-
                         </tr>
-
                         {% endfor %}
-
                     </tbody>
-
                 </table>
-
                 <!-- form -->
                 <form method="post">
-
                     {% csrf_token %}
-
                     {{ form.as_p }}
-
                     <div class="d-flex justify-content-end mt-4">
-
-                        <a href="{% url 'turnos_disponibles' %}"
-                           class="btn btn-light border me-2">
-
+                        <a href="{% url 'reservas_disponibles' %}" class="btn btn-light border me-2">
                             Cancelar
                         </a>
-
-                        <button type="submit"
-                                class="btn btn-main-cad">
-
+                        <button type="submit" class="btn btn-main-cad">
                             Confirmar Inscripción
                         </button>
-
                     </div>
-
                 </form>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 {% endblock %}

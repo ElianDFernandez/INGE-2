@@ -59,7 +59,7 @@
                 <tbody>
                     {% for actividad in actividades %}
                     <tr>
-                        <td class="ps-4 fw-bold">{{ actividad.nombre }}</td>
+                        <td class="ps-4">{{ actividad.nombre }}</td>
                         <td class="pe-4 text-end">
                             <a href="{% url 'actividad_edit' actividad.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i></a>
                             {% if actividad.tiene_reservas %}

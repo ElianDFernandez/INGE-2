@@ -32,7 +32,7 @@ def socio_list(request):
 def socio_reservas(request, socio_id):
     # Traigo el historial de reservas de este usuario particular
     socio = get_object_or_404(User, id=socio_id)
-    reservas = Reserva.objects.filter(user=socio).order_by('-clase_programada__fecha', '-clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=socio).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
         'reservas': reservas})
