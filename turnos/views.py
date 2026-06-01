@@ -188,6 +188,16 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
                     if c_id.isdigit():
                         # ACTUALIZACIÓN DE CLASE EXISTENTE
                         if clase_form.has_changed():
+                            if not instancia_clase.puede_modificar():
+                                if set(clase_form.changed_data) == {"cupo_maximo"}:
+                                    instancia_clase.cupo_maximo = clase_form.cleaned_data["cupo_maximo"]
+                                    instancia_clase.save(update_fields=["cupo_maximo"])
+                                    continue
+                                messages.error(
+                                    request,
+                                    f'No se pudo editar la clase "{instancia_clase}" porque tiene reservas proximas.'
+                                )
+                                continue
                             instancia_clase.reemplazar_por_modificacion(clase_form.cleaned_data)
                     else:
                         # CREACIÓN DE CLASE NUEVA

@@ -106,6 +106,20 @@ class ClaseForm(forms.ModelForm):
                     raise forms.ValidationError('El espacio seleccionado se encuentra en uso durante el horario elegido.')
         
         if self.instance.pk and self.instance.tiene_reservas_proximas():
-            raise forms.ValidationError('No se puede modificar una clase con reservas activas en las próximas 24 horas.')
+            cambios = {
+                "dia": cleaned_data.get("dia"),
+                "espacio": cleaned_data.get("espacio"),
+                "hora_inicio": cleaned_data.get("hora_inicio"),
+                "hora_fin": cleaned_data.get("hora_fin"),
+                "costo": cleaned_data.get("costo"),
+            }
+            cambios_no_cupo = any(
+                valor != getattr(self.instance, campo)
+                for campo, valor in cambios.items()
+            )
+            if cambios_no_cupo:
+                raise forms.ValidationError(
+                    'No se puede modificar una clase con reservas activas en las proximas 24 horas.'
+                )
 
         return cleaned_data

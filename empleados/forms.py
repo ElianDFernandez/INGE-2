@@ -20,16 +20,16 @@ class EmpleadoCreateForm(forms.ModelForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         user.is_staff = True
-        user.set_password(user.email)
+        user.set_password(user.email)  # La contraseña temporal es el email del empleado
         if commit:
             user.save()
             send_mail(
                 subject="Tu cuenta de empleado",
                 message=(
                     "Se creo tu cuenta de empleado.\n"
-                    f"Usuario: {user.username}\n"
-                    f"Contrasena temporal: {user.email}\n"
-                    "Podras modificarla desde tu perfil."
+                    f"Usuario: {user.email}\n"
+                    f"Contraseña temporal: {user.email}\n"
+                    "Deberas cambiarla al iniciar sesion."
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],

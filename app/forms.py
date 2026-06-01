@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 
@@ -45,11 +46,21 @@ class PerfilForm(forms.ModelForm):
         datos = super().clean()
         clave_vieja = datos.get('current_password')
         clave_nueva = datos.get('new_password')
+        if self.instance.is_staff and not self.instance.is_superuser:
+            if self.instance.check_password(self.instance.email):
+                if not clave_nueva:
+                    self.add_error('new_password', 'Necesitas cambiar la contraseña temporal.')
+                elif clave_nueva == self.instance.email:
+                    self.add_error('new_password', 'La nueva contraseña debe ser distinta a la temporal.')
         if clave_nueva:
             if not clave_vieja:
                 self.add_error('current_password', 'Necesitas escribir tu clave actual para poder cambiarla.')
             elif not self.instance.check_password(clave_vieja):
                 self.add_error('current_password', 'Clave actual incorrecta.')
+            elif clave_vieja == clave_nueva:
+                self.add_error('new_password', 'La nueva contraseña debe ser distinta a la actual.')
+            elif clave_nueva == self.instance.email:
+                self.add_error('new_password', 'La nueva contraseña debe ser distinta a tu mail.')
         return datos
 
     def save(self, commit=True):
