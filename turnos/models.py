@@ -110,12 +110,12 @@ class Clase(models.Model):
         }
         fecha = timezone.localdate()
         cur_mes = fecha.month
-        prox_mes = cur_mes + 1 if cur_mes < 12 else 1
+
         while fecha.weekday() != dias[self.dia]:
             fecha += timedelta(days=1)
         inscripciones_activas = self.turno.inscripcion_set.filter(estado='ACTIVA').select_related('user')
         reservas_a_crear = []
-        while (fecha.month==cur_mes) or (fecha.month==prox_mes):
+        while (fecha.month==cur_mes):
             cp, created = ClaseProgramada.objects.get_or_create(clase=self, fecha=fecha)
             if created:
                 for inscripcion in inscripciones_activas:
@@ -213,6 +213,10 @@ class ClaseProgramada(models.Model):
         fecha_hora_fin_aware = timezone.make_aware(fecha_hora_fin)
         return timezone.now() > fecha_hora_fin_aware
 
+    @property
+    def puede_pasar_presente(self):
+        return timezone.localdate() == self.fecha
+    
     class Meta:
         ordering = ['fecha', 'clase__hora_inicio']
         unique_together = ('clase', 'fecha')

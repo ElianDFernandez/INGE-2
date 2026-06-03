@@ -84,11 +84,11 @@
                                             <form action="{% url 'registrar_devolucion' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-warning mb-1" title="Canceló con más de 24hs">
-                                                    <i class="fa-solid fa-rotate-left me-1"></i> Devolver Seña
+                                                    <i class="fa-solid fa-rotate-left me-1"></i> Devolver Pago
                                                 </button>
                                             </form>
                                         {% else %}
-                                            <small class="text-success fw-bold"><i class="fa-solid fa-check-double me-1"></i>Seña Devuelta</small>
+                                            <small class="text-success fw-bold"><i class="fa-solid fa-check-double me-1"></i>Pago Devuelto</small>
                                         {% endif %}
                                     {% else %}
                                         <span>-</span>
@@ -96,7 +96,7 @@
                                     
                                 {% else %}
                                     <div class="d-inline-flex">
-                                        {% if not reserva.asistio and not reserva.clase_programada.ya_finalizo %}
+                                        {% if not reserva.asistio and reserva.clase_programada.puede_pasar_presente %}
                                             <form action="{% url 'registrar_asistencia' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-success me-1 mb-1" title="Registrar asistencia">

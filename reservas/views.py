@@ -63,7 +63,7 @@ def reserva_confirm(request, clase_programada_pk):
 @login_required
 def reserva_list(request):
     hoy = timezone.localdate()
-    reservas = Reserva.objects.filter(user=request.user,clase_programada__fecha__gte=hoy).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
     inscripciones = Inscripcion.objects.filter(user=request.user)
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
