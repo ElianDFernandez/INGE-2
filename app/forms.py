@@ -10,6 +10,13 @@ class RegistroForm(UserCreationForm):
         model = User
         fields = ("username", "email")
 
+    def clean_email(self):
+        email_ingresado = self.cleaned_data.get('email').lower()
+        if User.objects.filter(email=email_ingresado).exists():
+            raise forms.ValidationError('Este email ya esta en uso.')
+            
+        return email_ingresado
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
