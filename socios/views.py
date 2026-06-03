@@ -75,7 +75,7 @@ def registrar_devolucion(request, reserva_id):
         reserva.save()
         
         # Mensaje aclaratorio de que es manual
-        messages.success(request, f"Seña devuelta manualmente a {reserva.user.username}. (La carga automática de créditos se implementará en el próximo sprint).")
+        messages.success(request, f"Pago devuelto manualmente a {reserva.user.username}. (La carga automática de créditos se implementará en el próximo sprint).")
         
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 

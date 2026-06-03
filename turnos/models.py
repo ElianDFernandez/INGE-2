@@ -213,6 +213,10 @@ class ClaseProgramada(models.Model):
         fecha_hora_fin_aware = timezone.make_aware(fecha_hora_fin)
         return timezone.now() > fecha_hora_fin_aware
 
+    @property
+    def puede_pasar_presente(self):
+        return timezone.localdate() == self.fecha
+    
     class Meta:
         ordering = ['fecha', 'clase__hora_inicio']
         unique_together = ('clase', 'fecha')
