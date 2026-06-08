@@ -65,7 +65,24 @@ def create_turno(request):
                     hay_errores = True
                     for error in clase_form.non_field_errors():
                         messages.error(request, f"Error en la Clase {i+1}: {error}")
-            
+        
+            # Validar superposición entre las clases nuevas del mismo turno
+            for i, clase1 in enumerate(clases_validas):
+                for j, clase2 in enumerate(clases_validas):
+                    if i >= j:
+                        continue
+
+                    if clase1.dia == clase2.dia:
+                        if (
+                            clase1.hora_inicio < clase2.hora_fin
+                            and clase1.hora_fin > clase2.hora_inicio
+                        ):
+                            hay_errores = True
+                            messages.error(
+                                request,
+                                f"Las clases {i+1} y {j+1} tienen horarios superpuestos."
+                            )
+
             if not hay_errores and clases_validas:
                 turno = turno_form.save()
                 for clase in clases_validas:
@@ -103,6 +120,7 @@ def create_turno(request):
         'clase_forms': clase_forms,
         'cupo_maximo': cupo_global
     })
+
 class TurnoListView(EmpleadoRequiredMixin, ListView):
     model = Turno
     template_name = "turnos/turno_list.html"
