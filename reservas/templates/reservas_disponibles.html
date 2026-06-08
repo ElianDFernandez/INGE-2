@@ -24,7 +24,7 @@
         <ul class="nav nav-tabs nav-fill flex-nowrap mx-3 mx-md-0 mb-4" id="reservasTabs" role="tablist" style="overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-bold px-3 px-md-4" id="turnos-tab" data-bs-toggle="tab" data-bs-target="#turnos-tab-pane" type="button" role="tab" aria-controls="turnos-tab-pane" aria-selected="true" style="color: var(--cad-primary);">
-                    Turnos Disponibles
+                    Turnos
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -119,7 +119,7 @@
                     {% empty %}
                     <div class="card shadow-sm border-0 mx-2 mx-md-0 mb-4 mensaje-vacio-turnos">
                         <div class="card-body text-center py-4 text-muted">
-                            No hay turnos disponibles actualmente.
+                            No hay turnos para mostrar.
                         </div>
                     </div>
                     {% endfor %}
