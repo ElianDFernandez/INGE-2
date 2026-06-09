@@ -79,3 +79,9 @@ def registrar_devolucion(request, reserva_id):
         
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
+@login_required
+def socio_mis_creditos(request):
+    socio = request.user 
+    return render(request, 'socios/socio_mis_creditos.html', {
+        'socio': socio
+    })
