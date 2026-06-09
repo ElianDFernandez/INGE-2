@@ -1,5 +1,11 @@
+import calendar
+
 from django.contrib.auth.models import User, UserManager
 from django.utils import timezone
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
 
 class SocioManager(UserManager):
     def get_queryset(self):
@@ -66,3 +72,38 @@ class Socio(User):
             'total_clases_mes': total_clases,
             'porcentaje_asistencia': porcentaje_asistencia,
         }
+    
+@receiver(post_save, sender=User)
+def crear_credito_para_socio(sender, instance, created, **kwargs):
+    if created and not instance.is_superuser and not instance.is_staff:
+        Credito.objects.create(socio=instance)
+    
+class Credito(models.Model):
+    socio = models.OneToOneField(Socio, on_delete=models.CASCADE, related_name='credito')
+    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"Crédito de {self.socio.username}: ${self.saldo}"
+    
+    def agregar_credito(self, monto):
+        self.saldo += monto
+        self.save()
+
+    def descontar_credito(self, monto):
+        if monto > self.saldo:
+            raise ValueError("Saldo insuficiente")
+        self.saldo -= monto
+        self.save()
+
+    def consultar_credito(self):
+        return self.saldo
+    
+    def reiniciar_credito(self):
+        self.saldo = 0
+        self.save()
+
+    def get_vencimiento(self):
+        hoy = timezone.localdate()
+        _, ultimo_dia = calendar.monthrange(hoy.year, hoy.month)
+        fecha = hoy.replace(day=ultimo_dia)
+        return fecha.strftime("%d/%m/%Y")
