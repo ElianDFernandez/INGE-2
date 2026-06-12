@@ -2,7 +2,7 @@ from django.db import models
 from datetime import datetime, timedelta
 from django.utils import timezone
 from turnos.models import ClaseProgramada
-
+import uuid
 class EstadoReserva(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
     CANCELADA = 'CANCELADA', 'Cancelada'
@@ -28,6 +28,7 @@ class Reserva(models.Model):
     pago_confirmado = models.BooleanField(default=False)
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, null=True, blank=True)
     sena_devuelta = models.BooleanField(default=False)
+    qr_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     def desactivar(self, informar = False, motivo = ''):
         if self.estado != EstadoReserva.CANCELADA:
