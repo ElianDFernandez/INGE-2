@@ -1,0 +1,45 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-body text-center">
+
+            <h2 class="mb-4">Asistencia por QR</h2>
+
+            <p class="mb-1">
+                <strong>Actividad:</strong>
+                {{ reserva.clase_programada.clase.turno.actividad.nombre }}
+            </p>
+
+            <p class="mb-1">
+                <strong>Fecha:</strong>
+                {{ reserva.clase_programada.fecha }}
+            </p>
+
+            <p class="mb-4">
+                <strong>Horario:</strong>
+                {{ reserva.clase_programada.clase.hora_inicio }}
+            </p>
+
+            <img
+                src="{% url 'reserva_qr_image' reserva.pk %}"
+                alt="Código QR"
+                class="img-fluid border rounded p-2 mb-4"
+                style="max-width: 250px;"
+            >
+
+            <p class="text-muted">
+                Presentá este código al ingresar para registrar tu asistencia.
+            </p>
+
+            <a href="{% url 'reserva_list' %}" class="btn btn-secondary">
+                Volver
+            </a>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

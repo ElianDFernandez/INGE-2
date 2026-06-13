@@ -5,13 +5,16 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+from django.http import HttpResponse
+
+from io import BytesIO
+import qrcode
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
 
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
-
 
 @login_required
 def reservas_disponibles(request):
@@ -141,3 +144,20 @@ def inscripcion_cancel(request, inscripcion_pk):
         'inscripcion': inscripcion,
         'clases_a_cancelar': clases_a_cancelar
     })
+
+@login_required
+def reserva_qr(request, reserva_pk):
+    reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+    return render(request, 'reservas/reserva_qr.html', {'reserva': reserva})
+
+@login_required
+def reserva_qr_image(request, reserva_pk):
+    reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+
+    imagen = qrcode.make(str(reserva.qr_token))
+    buffer = BytesIO() # no quiero guardar un archivo fisico, lo guardo en memoria
+    imagen.save(buffer, format="PNG")
+    
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+
