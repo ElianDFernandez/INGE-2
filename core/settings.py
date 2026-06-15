@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'empleados',
     'reservas',
     'socios',
+    'lista_espera'
 ]
 
 MIDDLEWARE = [

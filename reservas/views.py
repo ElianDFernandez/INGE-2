@@ -5,6 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+from lista_espera.models import ListaEspera, EstadoListaEspera
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
@@ -19,6 +20,9 @@ def reservas_disponibles(request):
     # CLASES INDIVIDUALES
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
+    #Clases de lista de espera (filtra por estados)
+    clases_en_lista_espera_cancelados = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.CANCELADO).values_list('clase_programada_id', flat=True)
+    clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.PENDIENTE).values_list('clase_programada_id', flat=True)
     # TURNOS
     turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
         Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).order_by('dia', 'hora_inicio').prefetch_related(
@@ -38,6 +42,8 @@ def reservas_disponibles(request):
     return render(request, 'reservas_disponibles.html', {
         'clases_programadas': clases_programadas,
         'clases_reservadas_ids': list(clases_reservadas_ids),
+        'clases_en_lista_espera_ids': list(clases_en_lista_espera_ids),
+        'clases_canceladas_lista_espera_ids': list(clases_en_lista_espera_cancelados),
         'turnos': turnos,
         'inscripciones_ids': list(inscripciones_ids),
         'actividades_filtro': actividades_filtro
