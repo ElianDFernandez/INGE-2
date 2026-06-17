@@ -74,7 +74,25 @@ class ClaseForm(forms.ModelForm):
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'costo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number', 'step': '0.01'}),
-            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number'},),
+            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number'}),
+        }
+
+class ClaseForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.actividad = kwargs.pop('actividad', None)
+        self.turno_obj = kwargs.pop('turno_obj', None) 
+        super().__init__(*args, **kwargs)
+    
+    class Meta:
+        model = Clase
+        fields = ['dia', 'espacio', 'hora_inicio', 'hora_fin', 'costo', 'cupo_maximo']
+        widgets = {
+            'dia': forms.Select(attrs={'class': 'form-select'}),
+            'espacio': forms.Select(attrs={'class': 'form-select'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'costo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number', 'step': '0.01'}),
+            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'type': 'number'}),
         }
 
     def clean(self):
@@ -85,41 +103,29 @@ class ClaseForm(forms.ModelForm):
         if hora_inicio and hora_fin and hora_inicio >= hora_fin:
             raise forms.ValidationError('La hora de inicio debe ser anterior a la hora de fin.')
         
-        actividad = self.actividad # viene del turno, no es campo propio
+        actividad = self.actividad
         espacio = cleaned_data.get('espacio')
         dia = cleaned_data.get('dia')
 
-        # no pueden haber clases de la misma actividad que se superpongan en el tiempo
         if actividad and dia and hora_inicio and hora_fin:
-            clases = Clase.objects.filter(turno__actividad=actividad, dia=dia, activo=True).exclude(pk=self.instance.pk)
-            for clase in clases:
+            clases_actividad = Clase.objects.filter(turno__actividad=actividad, dia=dia, activo=True)
+            if self.turno_obj and self.turno_obj.pk:
+                clases_actividad = clases_actividad.exclude(turno=self.turno_obj)
+            elif self.instance and self.instance.pk:
+                clases_actividad = clases_actividad.exclude(turno=self.instance.turno)
+            for clase in clases_actividad:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
                     raise forms.ValidationError('Ya existe una clase de esta actividad durante el horario elegido.')
 
-
-        # no pueden haber clases en el mismo espacio que se superpongan en el tiempo
         if espacio and dia and hora_inicio and hora_fin:
-            clases = Clase.objects.filter(espacio=espacio, dia=dia, activo=True).exclude(pk=self.instance.pk)
-
-            for clase in clases:
+            clases_espacio = Clase.objects.filter(espacio=espacio, dia=dia, activo=True)
+            if self.turno_obj and self.turno_obj.pk:
+                clases_espacio = clases_espacio.exclude(turno=self.turno_obj)
+            elif self.instance and self.instance.pk:
+                clases_espacio = clases_espacio.exclude(turno=self.instance.turno)
+                
+            for clase in clases_espacio:
                 if (hora_inicio < clase.hora_fin and hora_fin > clase.hora_inicio):
                     raise forms.ValidationError('El espacio seleccionado se encuentra en uso durante el horario elegido.')
         
-        if self.instance.pk and self.instance.tiene_reservas_proximas():
-            cambios = {
-                "dia": cleaned_data.get("dia"),
-                "espacio": cleaned_data.get("espacio"),
-                "hora_inicio": cleaned_data.get("hora_inicio"),
-                "hora_fin": cleaned_data.get("hora_fin"),
-                "costo": cleaned_data.get("costo"),
-            }
-            cambios_no_cupo = any(
-                valor != getattr(self.instance, campo)
-                for campo, valor in cambios.items()
-            )
-            if cambios_no_cupo:
-                raise forms.ValidationError(
-                    'No se puede modificar una clase con reservas activas en las proximas 24 horas.'
-                )
-
         return cleaned_data

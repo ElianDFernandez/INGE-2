@@ -21,7 +21,7 @@
                 <h6 class="mb-3">
                     Se harán las siguientes reservas:
                 </h6>
-                <table class="table">
+                <table class="table mb-4">
                     <tbody>
                         {% for clase in clases_a_reservar %}
                         <tr>
@@ -48,7 +48,14 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <!-- form -->
+
+                <div class="alert alert-info d-flex align-items-center mb-4 py-3" role="alert">
+                    <i class="fa-solid fa-circle-info me-3 fs-4"></i>
+                    <div class="small">
+                        <strong>Inscripción Mensual:</strong> Al confirmar, asegurarás tu lugar en este turno. El sistema generará tus reservas automáticamente mes a mes para que no tengas que volver a anotarte.
+                    </div>
+                </div>
+
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}

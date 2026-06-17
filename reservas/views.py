@@ -130,8 +130,7 @@ def inscripcion_cancel(request, inscripcion_pk):
             inscripcion.estado = 'DE_BAJA'
             inscripcion.fecha_baja = timezone.now()
             inscripcion.save()
-
-            inscripcion.cancelar_clases_programadas()
+            inscripcion.cancelar()
             return redirect('reserva_list')
     else:
         form = InscripcionCancelForm()

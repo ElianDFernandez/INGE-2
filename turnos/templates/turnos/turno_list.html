@@ -3,6 +3,81 @@
 {% block title %}Gestión de Turnos - CAD{% endblock %}
 
 {% block content %}
+<style>
+    .turno-calendar-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .turno-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(120px, 1fr));
+        gap: 6px;
+        min-width: 860px;
+    }
+
+    .turno-calendar-day-name {
+        text-align: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--cad-text);
+        opacity: 0.75;
+    }
+
+    .turno-calendar-day {
+        min-height: 128px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        background: #fff;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .turno-calendar-day.other-month {
+        background: #f8f9fa;
+        color: #adb5bd;
+    }
+
+    .turno-calendar-day-number {
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+
+    .turno-calendar-events {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: auto;
+    }
+
+    .turno-calendar-event {
+        border-radius: 9px;
+        padding: 5px 7px;
+        background: rgba(0, 67, 131, 0.08);
+        color: var(--cad-primary);
+        font-size: 0.72rem;
+        line-height: 1.15;
+    }
+
+    .turno-calendar-event small {
+        display: block;
+        color: var(--cad-text);
+        opacity: 0.75;
+        font-size: 0.68rem;
+    }
+
+    @media (max-width: 768px) {
+        .turno-calendar-grid {
+            min-width: 760px;
+        }
+    }
+</style>
 <div class="mt-4 container-fluid px-0 px-md-3">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mx-3 mx-md-0 gap-3">
         <h2 style="color: var(--cad-primary);" class="mb-0">Turnos</h2>
@@ -20,6 +95,7 @@
                         <tr>
                             <th class="ps-4 py-3">Turno</th>
                             <th class="py-3">Actividad</th>
+                            <th class="py-3 text-center">Inscripciones</th>
                             <th class="pe-4 text-end py-3">Acciones</th>
                         </tr>
                     </thead>
@@ -40,11 +116,21 @@
                             <td>
                                 <span class="badge text-bg-light border text-dark">{{ turno.actividad.nombre }}</span>
                             </td>
+                            <td class="text-center">
+                                {% if turno.inscripciones_activas %}
+                                    <span class="badge bg-success">{{ turno.inscripciones_activas }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">0</span>
+                                {% endif %}
+                            </td>
                             <td class="pe-4 text-end">
                                 {% if user.is_superuser or turno.actividad_id in actividades_asignadas_ids %}
-                                <a href="{% url 'turno_edit' turno.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Turno">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-calendario-{{ turno.pk }}" title="Ver calendario">
+                                        <i class="fa-solid fa-calendar-days"></i>
+                                    </button>
+                                    <a href="{% url 'turno_edit' turno.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Turno">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
                                     {% if not turno.tiene_reservas %}
                                         <a href="{% url 'turno_delete' turno.pk %}" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Turno">
                                             <i class="fa-solid fa-trash"></i>
@@ -60,7 +146,7 @@
                             </td>
                         </tr>
                         <tr class="collapse bg-light" id="turno-{{ turno.pk }}">
-                            <td colspan="3" class="p-0 border-0">
+                            <td colspan="4" class="p-0 border-0">
                                 <div class="p-3 p-md-4 border-bottom">
                                     <h6 class="text-muted mb-3 fs-6">
                                         <i class="fa-solid fa-clock me-2"></i>Clases asociadas
@@ -114,4 +200,66 @@
         </div>
     </div>
 </div>
+
+{% for turno in turnos %}
+<div class="modal fade" id="modal-calendario-{{ turno.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex flex-column">
+                    <h5 class="modal-title mb-1">
+                        Calendario de clases programadas
+                        <span class="text-truncate d-inline-block align-bottom" style="max-width: 240px;">
+                            {{ turno.nombre }}
+                        </span>
+                    </h5>
+                    <p class="text-muted small mb-0">{{ calendario_mes }} {{ calendario_anio }}. Clases programadas.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="turno-calendar-wrapper">
+                    <div class="turno-calendar-grid mb-2">
+                        <div class="turno-calendar-day-name">Lun</div>
+                        <div class="turno-calendar-day-name">Mar</div>
+                        <div class="turno-calendar-day-name">Mié</div>
+                        <div class="turno-calendar-day-name">Jue</div>
+                        <div class="turno-calendar-day-name">Vie</div>
+                        <div class="turno-calendar-day-name">Sáb</div>
+                        <div class="turno-calendar-day-name">Dom</div>
+                    </div>
+
+                    {% if turno.tiene_programaciones_mes %}
+                    <div class="turno-calendar-grid">
+                        {% for semana in turno.calendario_mensual %}
+                            {% for dia in semana %}
+                            <div class="turno-calendar-day {% if dia.fuera_mes %}other-month{% endif %}">
+                                <div class="turno-calendar-day-number">{{ dia.fecha.day }}</div>
+                                <div class="turno-calendar-events">
+                                    {% for clase_programada in dia.clases_programadas %}
+                                    <div class="turno-calendar-event">
+                                        {{ clase_programada.clase.hora_inicio|time:"H:i" }} - {{ clase_programada.clase.hora_fin|time:"H:i" }}
+                                        <small>{{ clase_programada.clase.get_espacio_display }}</small>
+                                    </div>
+                                    {% empty %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-light border mb-0">
+                        No hay clases programadas para este mes.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
