@@ -215,8 +215,17 @@ class ClaseProgramada(models.Model):
 
     @property
     def puede_pasar_presente(self):
-        return timezone.localdate() == self.fecha
-    
+        from datetime import datetime, timedelta
+        margen = 15
+        
+        ahora = timezone.now()
+        margen_antes = datetime.combine(self.fecha, self.clase.hora_inicio)
+        margen_antes = timezone.make_aware(margen_antes) - timedelta(minutes=margen)
+        margen_despues = datetime.combine(self.fecha, self.clase.hora_inicio)
+        margen_despues = timezone.make_aware(margen_despues) + timedelta(minutes=margen)
+
+        return margen_antes <= ahora and ahora <= margen_despues
+
     class Meta:
         ordering = ['fecha', 'clase__hora_inicio']
         unique_together = ('clase', 'fecha')
