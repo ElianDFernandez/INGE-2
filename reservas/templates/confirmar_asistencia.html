@@ -1,0 +1,51 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-body text-center">
+
+            <h2 class="mb-4">Confirmar asistencia</h2>
+
+            <p class="mb-1">
+                <strong>Socio:</strong>
+                {{ reserva.user.username }}
+            </p>
+
+            <p class="mb-1">
+                <strong>Actividad:</strong>
+                {{ reserva.clase_programada.clase.turno.actividad.nombre }}
+            </p>
+
+            <p class="mb-1">
+                <strong>Fecha:</strong>
+                {{ reserva.clase_programada.fecha }}
+            </p>
+
+            <p class="mb-4">
+                <strong>Horario:</strong>
+                {{ reserva.clase_programada.clase.hora_inicio }}
+            </p>
+
+            <div class="alert alert-info mb-4">
+                ¿Registrar la asistencia de este socio?
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <button type="submit" class="btn btn-success">
+                    Confirmar asistencia
+                </button>
+
+                <a href="{% url 'escanear_qr' %}" class="btn btn-secondary ms-2">
+                    Cancelar
+                </a>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

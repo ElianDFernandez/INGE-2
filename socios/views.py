@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib import messages
-from reservas.models import Reserva
+from reservas.models import EstadoReserva, Reserva
 from socios.models import Socio
 
 # 1. LISTADO GENERAL DE SOCIOS + BUSCADOR
@@ -43,10 +43,9 @@ def socio_reservas(request, socio_id):
 def registrar_asistencia(request, reserva_id):
     if request.method == 'POST':
         reserva = get_object_or_404(Reserva, id=reserva_id)
+        reserva.estado = EstadoReserva.PRESENTE
         reserva.asistio = True
         reserva.metodo_asistencia = 'MANUAL'
-        #reserva.fecha_asistencia = timezone.now()
-        #reserva.empleado_registro = request.user
         reserva.save()
         messages.success(request, f"Asistencia confirmada para {reserva.user.username}.")
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
