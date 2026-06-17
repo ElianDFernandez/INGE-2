@@ -170,4 +170,44 @@ def reserva_qr_image(request, reserva_pk):
     
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
+@staff_member_required
+def escanear_qr(request):
+    return render(request, 'escanear_qr.html')
 
+
+@staff_member_required
+def confirmar_asistencia(request, qr_token):
+    import uuid
+
+    # escaneo cualquier otra cosa que no sea un uuid
+    try:
+        qr_token = uuid.UUID(qr_token)
+    except ValueError:
+        messages.error(request, "El código QR escaneado no es válido.")
+        return redirect("escanear_qr")
+    
+    reserva = Reserva.objects.filter(
+        qr_token=qr_token,
+        estado=EstadoReserva.ACTIVA
+    ).first()
+
+    # si escanee un uuid, pero no esta asociada a una reserva activa en el sistema
+    if reserva is None:
+        messages.error(request, "El código QR escaneado no es válido.")
+        return redirect("escanear_qr")
+
+    # la reserva existe pero ya no se puede pasar asistencia
+    if not reserva.clase_programada.puede_pasar_presente:
+        messages.error(request, "El periodo para pasar la asistencia de esta reserva ya pasó o aún no ha comenzado.")
+        return redirect("escanear_qr")
+
+    if request.method == "POST":
+        reserva.estado = EstadoReserva.PRESENTE
+        reserva.asistio = True
+        reserva.metodo_asistencia = 'QR'
+        reserva.save()
+
+        messages.success(request, f"Asistencia confirmada para {reserva.user.username}.")
+        return redirect("escanear_qr")
+
+    return render(request, "confirmar_asistencia.html", {"reserva": reserva})

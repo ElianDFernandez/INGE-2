@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, reservas_disponibles,inscripcion_confirm, inscripcion_cancel)
+from .views import (reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia,  reservas_disponibles,inscripcion_confirm, inscripcion_cancel)
 
 urlpatterns = [
     # Panel de Mis Reservas
@@ -14,6 +14,10 @@ urlpatterns = [
     path('qr_asistencia/<int:reserva_pk>/', reserva_qr, name='reserva_qr'),
     # lo necesito para mostrar la imagen del qr
     path('qr_asistencia/<int:reserva_pk>/imagen/', reserva_qr_image, name='reserva_qr_image'),
+
+    # solo visible para admin y empleados
+    path('escanear_qr/', escanear_qr, name='escanear_qr'),
+    path('confirmar_asistencia/<str:qr_token>/', confirmar_asistencia, name='confirmar_asistencia'),
 
     # Acciones de Turnos
     path('confirmar_inscripcion/<int:turno_pk>/', inscripcion_confirm, name='inscripcion_confirm'),
