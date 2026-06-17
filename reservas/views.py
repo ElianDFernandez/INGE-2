@@ -66,7 +66,8 @@ def reserva_confirm(request, clase_programada_pk):
 @login_required
 def reserva_list(request):
     hoy = timezone.localdate()
-    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('-clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+
     inscripciones = Inscripcion.objects.filter(user=request.user)
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
@@ -148,11 +149,20 @@ def inscripcion_cancel(request, inscripcion_pk):
 @login_required
 def reserva_qr(request, reserva_pk):
     reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+    
+    # por si intento meterme por url
+    if not reserva.clase_programada.puede_pasar_presente:
+        return redirect('reserva_list')
+    
     return render(request, 'reservas/reserva_qr.html', {'reserva': reserva})
 
 @login_required
 def reserva_qr_image(request, reserva_pk):
     reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+
+    # por si intento meterme por url
+    if not reserva.clase_programada.puede_pasar_presente:
+        return redirect('reserva_list')
 
     imagen = qrcode.make(str(reserva.qr_token))
     buffer = BytesIO() # no quiero guardar un archivo fisico, lo guardo en memoria
