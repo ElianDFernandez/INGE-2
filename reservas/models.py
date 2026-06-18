@@ -8,6 +8,7 @@ class EstadoReserva(models.TextChoices):
     CANCELADA = 'CANCELADA', 'Cancelada'
     PRESENTE = 'PRESENTE', 'Presente'
     AUSENTE = 'AUSENTE', 'Ausente'
+    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Pendiente de Pago'
 
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'
@@ -28,6 +29,11 @@ class Reserva(models.Model):
     pago_confirmado = models.BooleanField(default=False)
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, null=True, blank=True)
     sena_devuelta = models.BooleanField(default=False)
+
+    # Campo para guardar el ID de preferencia de MercadoPago
+    mp_preference_id = models.CharField(max_length=255, null=True, blank=True)
+    # Campo para guardar el ID del pago real una vez que se concreta
+    mp_payment_id = models.CharField(max_length=255, null=True, blank=True)
 
     def desactivar(self, informar = False, motivo = ''):
         if self.estado != EstadoReserva.CANCELADA:

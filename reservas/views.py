@@ -5,6 +5,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+import mercadopago
+from django.conf import settings
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
@@ -46,19 +48,94 @@ def reservas_disponibles(request):
 @login_required
 def reserva_confirm(request, clase_programada_pk):
     clase_programada = get_object_or_404(ClaseProgramada, pk=clase_programada_pk, clase__activo=True, clase__turno__activo=True)
+    
     if request.method == 'POST':
         form = ReservaForm(request.POST, user=request.user, clase_programada=clase_programada)
         if form.is_valid():
+            # 1. Crea la reserva sin guardarla definitivamente para ajustar el estado
             reserva = form.save(commit=False)
             reserva.user = request.user
             reserva.clase_programada = clase_programada
+            # Regla de negocio: inicia pendiente de pago
+            reserva.estado = 'PENDIENTE_PAGO' 
+            reserva.pago_confirmado = False
             reserva.save()
-            messages.success(request, f'¡Excelente! Tu reserva para el {clase_programada.clase.get_dia_display()} a las {clase_programada.clase.hora_inicio} hs ha sido confirmada.')
-            return redirect('reservas_disponibles')
+            
+            # 2. Regla de negocio: Calcular el 50% de la seña
+
+            valor_total = float(clase_programada.clase.costo)
+            valor_sena = valor_total * 0.50
+            
+            # 3. Integración con Mercado Pago
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+            url_exito = request.build_absolute_uri(reverse('pago_exitoso', args=[reserva.id]))
+            url_fallo = request.build_absolute_uri(reverse('pago_fallido', args=[reserva.id]))
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": f"Seña Reserva: {clase_programada.clase.turno.actividad.nombre}",
+                        "quantity": 1,
+                        "unit_price": float(valor_sena),
+                    }
+                ],
+                "back_urls": {
+                    "success": url_exito,
+                    "failure": url_fallo,
+                    "pending": url_fallo
+                },
+                # "auto_return": "approved",
+            }
+
+            try:
+                preference_response = sdk.preference().create(preference_data)
+                print(">>> RESPUESTA CRUDA DE MP:", preference_response)
+                preference = preference_response["response"]
+                
+                reserva.mp_preference_id = preference['id']
+                reserva.save()
+                
+                # Redirige a MP
+                return redirect(preference['sandbox_init_point']) 
+
+            except Exception as e:
+                print(">>> ERROR EN PYTHON:", e)
+                reserva.delete() # Limpiamos la base de datos si falló la conexión
+                messages.error(request, 'Error en el pago de la seña. No se ha podido establecer la conexión. Intente más tarde.')
+                return redirect('reservas_disponibles')
     else:
         form = ReservaForm(user=request.user, clase_programada=clase_programada)
 
     return render(request, 'reservas/reserva_confirm.html', {'form': form, 'clase_programada': clase_programada})
+
+@login_required
+def pago_exitoso(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
+    
+    payment_id = request.GET.get('payment_id')
+    
+    # Confirma reserva
+    reserva.estado = EstadoReserva.ACTIVA
+    reserva.pago_confirmado = True
+    reserva.mp_payment_id = payment_id
+    reserva.save()
+    
+    # Nota: restar cupo donde?
+    
+    messages.success(request, 'La operación se realizó correctamente. Tu reserva está confirmada.')
+    return redirect('reserva_list')
+
+@login_required
+def pago_fallido(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
+    
+    # Cancela reserva por falta de pago
+    reserva.estado = EstadoReserva.CANCELADA
+    reserva.save()
+    
+    messages.error(request, 'El pago no pudo procesarse. Tu reserva ha sido cancelada.')
+    return redirect('reserva_list')
 
 @login_required
 def reserva_list(request):
@@ -141,3 +218,4 @@ def inscripcion_cancel(request, inscripcion_pk):
         'inscripcion': inscripcion,
         'clases_a_cancelar': clases_a_cancelar
     })
+
