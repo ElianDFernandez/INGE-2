@@ -202,7 +202,6 @@ def confirmar_asistencia(request, qr_token):
         return redirect("escanear_qr")
 
     if request.method == "POST":
-        reserva.estado = EstadoReserva.PRESENTE
         reserva.asistio = True
         reserva.metodo_asistencia = 'QR'
         reserva.save()

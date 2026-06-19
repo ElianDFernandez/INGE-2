@@ -6,13 +6,9 @@ import uuid
 class EstadoReserva(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
     CANCELADA = 'CANCELADA', 'Cancelada'
-    PRESENTE = 'PRESENTE', 'Presente'
-    AUSENTE = 'AUSENTE', 'Ausente'
-
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'
     QR = 'QR', 'Código QR'
-
 class MetodoPago(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual (Recepción)'
     VIRTUAL = 'VIRTUAL', 'Virtual (MercadoPago/Transferencia)'

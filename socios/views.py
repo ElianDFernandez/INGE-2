@@ -43,7 +43,6 @@ def socio_reservas(request, socio_id):
 def registrar_asistencia(request, reserva_id):
     if request.method == 'POST':
         reserva = get_object_or_404(Reserva, id=reserva_id)
-        reserva.estado = EstadoReserva.PRESENTE
         reserva.asistio = True
         reserva.metodo_asistencia = 'MANUAL'
         reserva.save()
