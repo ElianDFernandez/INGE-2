@@ -33,3 +33,20 @@ def cancelar_lista_espera(request, clase_programada_pk):
         
     return redirect('reservas_disponibles')
 
+@login_required
+def confirmar_desde_email(request, lista_espera_id):
+    """Confirma la reserva cuando hace click en el email"""
+    
+    entrada = get_object_or_404(ListaEspera, pk=lista_espera_id, user=request.user)
+    
+    # Verifica que siga en estado notificado (no expirado)
+    if entrada.estado != EstadoListaEspera.NOTIFICADO:
+        messages.error(request, 'Este enlace ya no es válido.')
+        return redirect('reservas_disponibles')
+    
+    # Marca como confirmado
+    entrada.estado = EstadoListaEspera.CONFIRMADO
+    entrada.save()
+    
+    messages.success(request, '¡Confirmado! Tu lugar está reservado.')
+    return redirect('reservas_disponibles')

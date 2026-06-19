@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (reserva_list, reserva_confirm, reserva_cancel, reservas_disponibles,inscripcion_confirm, inscripcion_cancel)
 from lista_espera import views as lista_espera_views
+from django.urls import path, include
+
 urlpatterns = [
     # Panel de Mis Reservas
     path('', reserva_list, name='reserva_list'),
@@ -19,5 +21,6 @@ urlpatterns = [
     #Acciones de lista de espera 
     path('<int:clase_programada_pk>/lista-espera/inscribirse/', lista_espera_views.inscribirse_lista_espera, name='inscribirse_lista_espera'),
     path('<int:clase_programada_pk>/lista-espera/cancelar/', lista_espera_views.cancelar_lista_espera, name='cancelar_lista_espera'),
-       
+
+    path('', include('lista_espera.urls')), 
 ]
