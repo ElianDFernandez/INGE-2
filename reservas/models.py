@@ -26,6 +26,17 @@ class Reserva(models.Model):
     sena_devuelta = models.BooleanField(default=False)
     qr_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            while True:
+                # antes de guardarlo en la db me fijo si el token colisiona con el de otra reserva para que no rompa por el unique
+                token = uuid.uuid4()
+                if not Reserva.objects.filter(qr_token=token).exists():
+                    self.qr_token = token
+                    break
+
+        super().save(*args, **kwargs)
+
     def desactivar(self, informar = False, motivo = ''):
         if self.estado != EstadoReserva.CANCELADA:
             self.estado = EstadoReserva.CANCELADA
