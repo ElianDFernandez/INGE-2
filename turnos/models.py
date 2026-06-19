@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.db import models
 from django.utils import timezone
 from actividades.models import Actividad
@@ -103,7 +103,6 @@ class Clase(models.Model):
     activo = models.BooleanField(default=True)
 
     def generar_clases_programadas(self):
-        import datetime
         from reservas.models import Reserva, EstadoReserva
 
         dias = {
