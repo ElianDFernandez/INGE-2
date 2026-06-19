@@ -103,16 +103,26 @@ class Clase(models.Model):
     activo = models.BooleanField(default=True)
 
     def generar_clases_programadas(self):
+        import datetime
         from reservas.models import Reserva, EstadoReserva
+
         dias = {
             'LUNES': 0, 'MARTES': 1, 'MIERCOLES': 2, 'JUEVES': 3,
             'VIERNES': 4, 'SABADO': 5, 'DOMINGO': 6,
         }
+
         fecha = timezone.localdate()
         cur_mes = fecha.month
 
+        # me salteo la generacion de hoy si la clase ya hubiese terminado o quedan menos de margen horas para que arranque
+        inicio_hoy = timezone.make_aware(datetime.combine(fecha, self.hora_inicio))
+        margen_horas = 2
+        if timezone.localtime() >= inicio_hoy - timedelta(hours=margen_horas):
+            fecha += timedelta(days=1)
+
         while fecha.weekday() != dias[self.dia]:
             fecha += timedelta(days=1)
+        
         inscripciones_activas = self.turno.inscripcion_set.filter(estado='ACTIVA').select_related('user')
         reservas_a_crear = []
         while (fecha.month==cur_mes):
