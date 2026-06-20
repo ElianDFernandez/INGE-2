@@ -1,9 +1,8 @@
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.contrib import messages
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.urls import reverse_lazy
-from django.http import HttpResponse
 from .models import Clase, Turno
 from .forms import TurnoForm, ClaseForm
 from empleados.models import EmpleadoActividad
@@ -108,6 +107,7 @@ def create_turno(request):
         'clase_forms': clase_forms,
         'cupo_maximo': cupo_global
     })
+
 class TurnoListView(EmpleadoRequiredMixin, ListView):
     model = Turno
     template_name = "turnos/turno_list.html"
@@ -175,6 +175,7 @@ class TurnoListView(EmpleadoRequiredMixin, ListView):
             turno.tiene_programaciones_mes = bool(programadas_por_fecha)
 
         return context
+    
 class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
     model = Turno
     form_class = TurnoForm
@@ -265,10 +266,6 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
                 inscripciones_activas = Inscripcion.objects.filter(turno=self.object, estado=EstadoInscripcion.ACTIVA)
                 for inscripcion in inscripciones_activas:
                     inscripcion.cancelar(por_modificacion_empleado=True)
-                
-                hoy = timezone.localdate()
-                for clase in self.object.clase_set.all():
-                    clase.claseprogramada_set.filter(fecha__gte=hoy).delete()
                     
                 messages.success(request, 'Turno actualizado. Las inscripciones previas fueron canceladas y reembolsadas.')
             else:
@@ -281,9 +278,28 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
                 clase.save()
                 
             for form in clases_a_guardar:
-                clase = form.save(commit=False)
-                clase.turno = turno
-                clase.save()
+                if form.instance.pk and form.has_changed():
+                    # Clase existente modificada: desactiva la vieja y crea una nueva.
+                    # Así las Reserva/ClaseProgramada históricas siguen apuntando
+                    # a la clase original con los datos que el socio reservó.
+                    form.instance.activo = False
+                    form.instance.save()
+                    Clase.objects.create(
+                        turno=turno,
+                        dia=form.cleaned_data['dia'],
+                        espacio=form.cleaned_data['espacio'],
+                        hora_inicio=form.cleaned_data['hora_inicio'],
+                        hora_fin=form.cleaned_data['hora_fin'],
+                        costo=form.cleaned_data['costo'],
+                        cupo_maximo=form.cleaned_data['cupo_maximo'],
+                        activo=True
+                    )
+                elif not form.instance.pk:
+                    # Clase nueva: creacion normal
+                    nueva_clase = form.save(commit=False)
+                    nueva_clase.turno = turno
+                    nueva_clase.save()
+                # else: clase existente sin cambios → no hace nada
 
             if hubo_modificacion:
                 self.object.generar_clases_programadas()
@@ -314,70 +330,3 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
         self.object.desactivar()
         return redirect(self.success_url)
 
-class ClaseCreateView(EmpleadoRequiredMixin, CreateView):
-    model = Clase
-    form_class = ClaseForm
-    template_name = 'clases/clase_form.html'
-    success_url = reverse_lazy('turno_list')
-
-    def form_valid(self, form):
-            turno = get_object_or_404(
-                Turno,
-                pk=self.kwargs['turno_pk']
-            )
-
-            form.instance.turno = turno
-            return super().form_valid(form)
-
-
-class ClaseUpdateView(EmpleadoRequiredMixin, UpdateView):
-    model = Clase
-    form_class = ClaseForm
-    template_name = 'clases/clase_form.html'
-
-    def get_queryset(self):
-        return Clase.objects.filter(activo=True)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['actividad'] = self.object.turno.actividad
-        return kwargs
-
-    def get_success_url(self):
-        return reverse_lazy(
-            'turno_edit',
-            kwargs={
-                'pk': self.object.turno.pk
-            }
-        )
-
-class ClaseDeleteView(EmpleadoRequiredMixin, DeleteView):
-    model = Clase
-    template_name = 'clases/clase_confirm_delete.html'
-    success_url = reverse_lazy('turno_list')
-
-    def get_queryset(self):
-        return Clase.objects.filter(activo=True)
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if self.object.tiene_reservas():
-            messages.error(
-                request,
-                'No se puede eliminar la clase porque tiene reservas asociadas.'
-            )
-            return redirect(self.get_success_url())
-        return super().post(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tiene_reservas'] = self.object.tiene_reservas()
-        return context
-    
-    def get_success_url(self):
-        return reverse_lazy(
-            'turno_edit',
-            kwargs={
-                'pk': self.object.turno.pk
-            }
-        )
