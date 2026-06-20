@@ -58,11 +58,15 @@ class Reserva(models.Model):
         if self.clase_programada.ya_empezo:
             return
 
+        if not self.pago_confirmado and not self.asistio:
+            return
+
         if (self.corresponde_devolucion or por_empleado) and not self.sena_devuelta:
             if hasattr(self.user, 'credito'):
                 self.user.credito.agregar_credito(self.clase_programada.clase.costo)
                 self.sena_devuelta = True
                 self.save()
+                
 class EstadoInscripcion(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
     DE_BAJA = 'DE_BAJA', 'De Baja'
