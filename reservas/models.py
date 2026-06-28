@@ -1,3 +1,4 @@
+import calendar
 from django.db import models
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -52,20 +53,6 @@ class Reserva(models.Model):
             self.estado = EstadoReserva.CANCELADA
             self.fecha_cancelacion = timezone.now()
             self.save()
-        self.devolver_pago(por_empleado)
-
-    def devolver_pago(self, por_empleado=False):
-        if self.clase_programada.ya_empezo:
-            return
-
-        if not self.pago_confirmado and not self.asistio:
-            return
-
-        if (self.corresponde_devolucion or por_empleado) and not self.sena_devuelta:
-            if hasattr(self.user, 'credito'):
-                self.user.credito.agregar_credito(self.clase_programada.clase.costo)
-                self.sena_devuelta = True
-                self.save()
                 
 class EstadoInscripcion(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
@@ -90,7 +77,58 @@ class Inscripcion(models.Model):
             if (not Reserva.objects.filter(user=self.user, clase_programada=clase_programada, estado=EstadoReserva.ACTIVA).exists()):
                 Reserva.objects.create(user=self.user, clase_programada=clase_programada)
     
+    def generar_vales_devolucion(self, por_modificacion_empleado=False):
+        """
+        Genera vales para las reservas pagas que se cancelan con al menos 48hs de anticipación.
+        Si la cancelación es por modificación del empleado, se considera que cumple el plazo.
+        """
+        from socios.models import Vale
+
+        hoy = timezone.localdate()
+        _, ultimo_dia = calendar.monthrange(hoy.year, hoy.month)
+        fecha_vencimiento = hoy.replace(day=ultimo_dia)
+
+        clases_programadas = self.turno.get_clases_programadas().filter(
+            fecha__gte=hoy
+        )
+
+        reservas_pagas = Reserva.objects.filter(
+            user=self.user,
+            clase_programada__in=clases_programadas,
+            estado=EstadoReserva.ACTIVA,
+            pago_confirmado=True
+        )
+
+        vales_creados = 0
+        ahora = timezone.now()
+
+        for reserva in reservas_pagas:
+            if por_modificacion_empleado:
+                generar = True
+            else:
+                fecha_hora_clase = datetime.combine(
+                    reserva.clase_programada.fecha,
+                    reserva.clase_programada.clase.hora_inicio
+                )
+                fecha_hora_clase = timezone.make_aware(fecha_hora_clase, timezone.get_current_timezone())
+                anticipacion = fecha_hora_clase - ahora
+                generar = anticipacion >= timedelta(hours=48)
+
+            if generar:
+                Vale.objects.create(
+                    socio_id=self.user_id,
+                    actividad=self.turno.actividad,
+                    fecha_vencimiento=fecha_vencimiento
+                )
+                reserva.sena_devuelta = True
+                reserva.save(update_fields=['sena_devuelta'])
+                vales_creados += 1
+
+        return vales_creados
+
     def cancelar(self, por_modificacion_empleado=False):
+        vales_creados = self.generar_vales_devolucion(por_modificacion_empleado=por_modificacion_empleado)
+
         self.estado = EstadoInscripcion.DE_BAJA
         self.fecha_baja = timezone.now()
         self.save()
@@ -107,3 +145,5 @@ class Inscripcion(models.Model):
         
         for reserva in reservas_usuario:
             reserva.desactivar(informar=por_modificacion_empleado, motivo='El turno fue modificado' if por_modificacion_empleado else '', por_empleado=por_modificacion_empleado)
+
+        return vales_creados

@@ -83,8 +83,24 @@ def registrar_devolucion(request, reserva_id):
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
 @login_required
-def socio_mis_creditos(request):
-    socio = request.user 
-    return render(request, 'socios/socio_mis_creditos.html', {
-        'socio': socio
+def socio_mis_vales(request):
+    socio = request.user
+    hoy = timezone.localdate()
+    vales_disponibles = socio.vales.filter(
+        usado=False, fecha_vencimiento__gte=hoy
+    ).select_related('actividad').order_by('actividad__nombre', 'fecha_vencimiento')
+
+    vales_usados = socio.vales.filter(usado=True).select_related(
+        'actividad'
+    ).order_by('-fecha_uso')
+
+    vales_vencidos = socio.vales.filter(
+        usado=False, fecha_vencimiento__lt=hoy
+    ).select_related('actividad').order_by('-fecha_vencimiento')
+
+    return render(request, 'socios/socio_mis_vales.html', {
+        'socio': socio,
+        'vales_disponibles': vales_disponibles,
+        'vales_usados': vales_usados,
+        'vales_vencidos': vales_vencidos,
     })

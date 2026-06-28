@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -74,17 +75,75 @@ def reserva_list(request):
 def reserva_cancel(request, reserva_pk):
     reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado='ACTIVA')
 
+    # Determina si es abonado (inscripto al turno de esta clase)
+    turno = reserva.clase_programada.clase.turno
+    es_abonado = Inscripcion.objects.filter(
+        user=request.user, turno=turno, estado='ACTIVA'
+    ).exists()
+
+    # Calcular anticipación para saber qué pasará
+    ahora = timezone.now()
+    fecha_hora_clase = datetime.combine(
+        reserva.clase_programada.fecha,
+        reserva.clase_programada.clase.hora_inicio
+    )
+    fecha_hora_clase = timezone.make_aware(fecha_hora_clase, timezone.get_current_timezone())
+    anticipacion = fecha_hora_clase - ahora
+
+    if es_abonado:
+        if reserva.pago_confirmado and anticipacion >= timedelta(hours=48):
+            resultado_cancelacion = 'vale'
+        elif reserva.pago_confirmado:
+            resultado_cancelacion = 'pierde'
+        else:
+            resultado_cancelacion = 'sin_pago'
+    else:
+        if reserva.pago_confirmado and anticipacion >= timedelta(hours=24):
+            resultado_cancelacion = 'devuelve_sena'
+        elif reserva.pago_confirmado:
+            resultado_cancelacion = 'pierde_sena'
+        else:
+            resultado_cancelacion = 'sin_pago'
+
     if request.method == 'POST':
         form = ReservaCancelForm(request.POST)
         if form.is_valid():
             reserva.estado = EstadoReserva.CANCELADA
-            reserva.fecha_cancelacion = timezone.now()
+            reserva.fecha_cancelacion = ahora
+
+            if resultado_cancelacion == 'vale':
+                from socios.models import Vale
+                import calendar as cal
+                hoy = timezone.localdate()
+                _, ultimo_dia = cal.monthrange(hoy.year, hoy.month)
+                Vale.objects.create(
+                    socio_id=request.user.id,
+                    actividad=turno.actividad,
+                    fecha_vencimiento=hoy.replace(day=ultimo_dia)
+                )
+                reserva.sena_devuelta = True
+                messages.success(request, 'Clase cancelada. Se generó un vale para la actividad.')
+            elif resultado_cancelacion == 'pierde':
+                messages.warning(request, 'Clase cancelada. No se genera vale por cancelar con menos de 48hs de anticipación.')
+            elif resultado_cancelacion == 'devuelve_sena':
+                reserva.sena_devuelta = True
+                messages.success(request, 'Reserva cancelada. La seña será devuelta.')
+            elif resultado_cancelacion == 'pierde_sena':
+                messages.warning(request, 'Reserva cancelada. La seña se pierde por cancelar con menos de 24hs de anticipación.')
+            else:
+                messages.success(request, 'Reserva cancelada correctamente.')
+
             reserva.save()
             return redirect('reserva_list')
     else:
         form = ReservaCancelForm()
 
-    return render(request, 'reservas/reserva_cancel.html', {'form': form, 'reserva': reserva})
+    return render(request, 'reservas/reserva_cancel.html', {
+        'form': form,
+        'reserva': reserva,
+        'es_abonado': es_abonado,
+        'resultado_cancelacion': resultado_cancelacion,
+    })
 
 @login_required
 def inscripcion_confirm(request, turno_pk):
@@ -127,10 +186,12 @@ def inscripcion_cancel(request, inscripcion_pk):
     if request.method == 'POST':
         form = InscripcionCancelForm(request.POST)
         if form.is_valid():
-            inscripcion.estado = 'DE_BAJA'
-            inscripcion.fecha_baja = timezone.now()
-            inscripcion.save()
-            inscripcion.cancelar()
+            vales_generados = inscripcion.cancelar()
+
+            if vales_generados > 0:
+                messages.success(request, f'Inscripción cancelada. Se generaron {vales_generados} vale{"s" if vales_generados > 1 else ""} para {inscripcion.turno.actividad.nombre}.')
+            else:
+                messages.success(request, 'Inscripción cancelada correctamente.')
             return redirect('reserva_list')
     else:
         form = InscripcionCancelForm()

@@ -1,11 +1,6 @@
-import calendar
-
 from django.contrib.auth.models import User, UserManager
 from django.utils import timezone
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth.models import User
 
 class SocioManager(UserManager):
     def get_queryset(self):
@@ -72,38 +67,61 @@ class Socio(User):
             'total_clases_mes': total_clases,
             'porcentaje_asistencia': porcentaje_asistencia,
         }
+
+    def get_vales_disponibles(self):
+        """Retorna los vales disponibles (no usados y no vencidos)."""
+        hoy = timezone.localdate()
+        return self.vales.filter(usado=False, fecha_vencimiento__gte=hoy)
+
+    def get_vales_disponibles_por_actividad(self, actividad):
+        """Retorna vales disponibles para una actividad específica."""
+        return self.get_vales_disponibles().filter(actividad=actividad)
+
+    def tiene_vale_para_actividad(self, actividad):
+        """Verifica si el socio tiene un vale disponible para una actividad."""
+        return self.get_vales_disponibles_por_actividad(actividad).exists()
     
-@receiver(post_save, sender=User)
-def crear_credito_para_socio(sender, instance, created, **kwargs):
-    if created and not instance.is_superuser and not instance.is_staff:
-        Credito.objects.create(socio=instance)
-    
-class Credito(models.Model):
-    socio = models.OneToOneField(Socio, on_delete=models.CASCADE, related_name='credito')
-    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+class Vale(models.Model):
+    socio = models.ForeignKey(Socio, on_delete=models.CASCADE, related_name='vales')
+    actividad = models.ForeignKey('actividades.Actividad', on_delete=models.CASCADE, related_name='vales')
+    fecha_emision = models.DateField(auto_now_add=True)
+    fecha_vencimiento = models.DateField()
+    usado = models.BooleanField(default=False)
+    fecha_uso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Vale'
+        verbose_name_plural = 'Vales'
+        ordering = ['-fecha_emision']
 
     def __str__(self):
-        return f"Crédito de {self.socio.username}: ${self.saldo}"
-    
-    def agregar_credito(self, monto):
-        self.saldo += monto
+        estado = "Usado" if self.usado else "Disponible"
+        return f"Vale de {self.socio.username} para {self.actividad.nombre} ({estado})"
+
+    def usar(self):
+        """Marca el vale como usado."""
+        if self.usado:
+            raise ValueError("Este vale ya fue utilizado")
+        self.usado = True
+        self.fecha_uso = timezone.now()
         self.save()
 
-    def descontar_credito(self, monto):
-        if monto > self.saldo:
-            raise ValueError("Saldo insuficiente")
-        self.saldo -= monto
-        self.save()
+    def esta_vencido(self):
+        """Verifica si el vale ha vencido."""
+        return timezone.localdate() > self.fecha_vencimiento
 
-    def consultar_credito(self):
-        return self.saldo
-    
-    def reiniciar_credito(self):
-        self.saldo = 0
-        self.save()
+    def get_estado_display(self):
+        """Retorna el estado legible del vale."""
+        if self.usado:
+            return "Usado"
+        elif self.esta_vencido():
+            return "Vencido"
+        return "Disponible"
 
-    def get_vencimiento(self):
+    def get_dias_restantes(self):
+        """Retorna los días restantes antes del vencimiento."""
+        if self.usado:
+            return 0
         hoy = timezone.localdate()
-        _, ultimo_dia = calendar.monthrange(hoy.year, hoy.month)
-        fecha = hoy.replace(day=ultimo_dia)
-        return fecha.strftime("%d/%m/%Y")
+        dias = (self.fecha_vencimiento - hoy).days
+        return max(0, dias)
