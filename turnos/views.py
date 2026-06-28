@@ -266,10 +266,10 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
                 inscripciones_activas = Inscripcion.objects.filter(turno=self.object, estado=EstadoInscripcion.ACTIVA)
                 for inscripcion in inscripciones_activas:
                     inscripcion.cancelar(por_modificacion_empleado=True)
-                    
-                messages.success(request, 'Turno actualizado. Las inscripciones previas fueron canceladas y reembolsadas.')
-            else:
-                messages.success(request, 'Turno actualizado sin modificaciones estructurales.')
+                if inscripciones_activas.exists():
+                    messages.success(request, 'Turno actualizado. Las inscripciones previas fueron canceladas y se generaron los vales correspondientes.')
+                else:
+                    messages.success(request, 'Turno actualizado.')
 
             turno = turno_form.save()
             
