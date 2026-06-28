@@ -110,6 +110,7 @@ def reserva_cancel(request, reserva_pk):
         if form.is_valid():
             reserva.estado = EstadoReserva.CANCELADA
             reserva.fecha_cancelacion = ahora
+            reserva.save()
 
             if resultado_cancelacion == 'vale':
                 from socios.models import Vale
@@ -126,8 +127,8 @@ def reserva_cancel(request, reserva_pk):
             elif resultado_cancelacion == 'pierde':
                 messages.warning(request, 'Clase cancelada. No se genera vale por cancelar con menos de 48hs de anticipación.')
             elif resultado_cancelacion == 'devuelve_sena':
-                reserva.sena_devuelta = True
-                messages.success(request, 'Reserva cancelada. La seña será devuelta.')
+                reserva.devolver_pago()
+                return redirect('simular_reembolso', reserva_pk=reserva.pk)
             elif resultado_cancelacion == 'pierde_sena':
                 messages.warning(request, 'Reserva cancelada. La seña se pierde por cancelar con menos de 24hs de anticipación.')
             else:
@@ -200,4 +201,26 @@ def inscripcion_cancel(request, inscripcion_pk):
         'form': form,
         'inscripcion': inscripcion,
         'clases_a_cancelar': clases_a_cancelar
+    })
+
+@login_required
+def simular_reembolso(request, reserva_pk):
+    """Simula una pantalla de devolución de MercadoPago."""
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('clase_programada__clase__turno__actividad'),
+        pk=reserva_pk,
+        user=request.user
+    )
+
+    if not reserva.corresponde_devolucion:
+        messages.warning(request, 'No corresponde devolución para esta reserva.')
+        return redirect('reserva_list')
+
+    monto_devuelto = reserva.clase_programada.clase.costo
+    if not reserva.pago_total_confirmado:
+        monto_devuelto = monto_devuelto / 2
+
+    return render(request, 'reservas/simular_reembolso.html', {
+        'reserva': reserva,
+        'monto_devuelto': monto_devuelto,
     })

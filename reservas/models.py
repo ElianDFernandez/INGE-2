@@ -30,6 +30,8 @@ class Reserva(models.Model):
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, null=True, blank=True)
     sena_devuelta = models.BooleanField(default=False)
 
+    # Campo para marcar el pago total de la clase (falta implementar), pago_confirmado queda reservado para el abono de la seña.
+    pago_total_confirmado = models.BooleanField(default=False)
     class Meta:
         ordering = ['estado', '-fecha_reserva']
         verbose_name = 'Reserva'
@@ -37,7 +39,7 @@ class Reserva(models.Model):
 
     @property
     def corresponde_devolucion(self):
-        if self.estado == EstadoReserva.CANCELADA and self.pago_confirmado and not self.clase_programada.ya_empezo:
+        if self.estado == EstadoReserva.CANCELADA and (self.pago_confirmado or self.pago_total_confirmado) and not self.clase_programada.ya_empezo:
             if self.fecha_cancelacion:
                 fecha_hora_clase = datetime.combine(
                     self.clase_programada.fecha, 
@@ -53,6 +55,19 @@ class Reserva(models.Model):
             self.estado = EstadoReserva.CANCELADA
             self.fecha_cancelacion = timezone.now()
             self.save()
+
+    def devolver_pago(self):
+        """
+        Marca la reserva como reembolsada (simulado).
+        """
+        if self.sena_devuelta:
+            return  # ya fue devuelto
+
+        if not self.corresponde_devolucion:
+            return  # no corresponde reembolso
+
+        self.sena_devuelta = True
+        self.save(update_fields=['sena_devuelta'])
                 
 class EstadoInscripcion(models.TextChoices):
     ACTIVA = 'ACTIVA', 'Activa'
