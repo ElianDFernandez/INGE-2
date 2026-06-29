@@ -34,4 +34,5 @@ urlpatterns = [
     # Vistas protegidas
     path('home/', views.home, name='home'),
     path('perfil/', views.perfil, name='perfil'),
+    path('metricas/', views.metricas, name='metricas'),
 ]
