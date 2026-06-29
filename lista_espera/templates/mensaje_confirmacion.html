@@ -1,0 +1,31 @@
+<html>
+  <body style="font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; overflow: hidden;">
+      <tr>
+        <td style="padding: 24px; background: #0d6efd; color: #ffffff; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">{{ titulo }}</h1>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 24px; color: #212529;">
+          <p>Hola {{ usuario.get_full_name|default:usuario.username }},</p>
+          <p>{{ mensaje }}</p>
+          <p>
+            <strong>Actividad:</strong> {{ actividad }}<br>
+            <strong>Fecha:</strong> {{ fecha }}<br>
+            <strong>Hora:</strong> {{ hora_inicio }} - {{ hora_fin }}
+          </p>
+          <p>Para ver la notificación y elegir si confirmás o cancelás, hacé clic en el siguiente botón:</p>
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="{{ notificacion_url }}" style="display: inline-block; background: #0d6efd; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold;">Ver notificación</a>
+          </p>
+          <p style="color: #6c757d; font-size: 14px;">Si el enlace no funciona, copialo y pegalo en tu navegador:</p>
+          <p style="word-break: break-word; font-size: 14px; color: #0d6efd;">{{ notificacion_url }}</p>
+          <hr style="border: none; border-top: 1px solid #dee2e6; margin: 24px 0;">
+          <p style="font-size: 13px; color: #6c757d;">Si no confirmás en las próximas 2 horas, el cupo se ofrecerá a la siguiente persona en la lista de espera.</p>
+          <p style="font-size: 13px; color: #6c757d;">{{ sitio_url }}</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

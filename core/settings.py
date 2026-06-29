@@ -154,12 +154,13 @@ AUTHENTICATION_BACKENDS = [
 # Configuración de Mailtrap
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST_USER = '76a696fd58288c'
-EMAIL_HOST_PASSWORD = '9112e531d2de12'
-EMAIL_PORT = 2525
+EMAIL_HOST_USER = 'd3506c858f11b5'
+EMAIL_HOST_PASSWORD = 'e627cb088197cb'
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+SITE_URL = 'http://localhost:8000'
 
 ALLOWED_HOSTS = ['*', '192.168.0.45']
 
@@ -169,4 +170,4 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'America/Argentina'
+CELERY_TIMEZONE = 'America/Buenos_Aires'

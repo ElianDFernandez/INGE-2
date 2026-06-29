@@ -1,8 +1,11 @@
 from celery import shared_task 
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.urls import reverse
 from django.utils import timezone 
 from datetime import timedelta 
-from .models import ListaEspera,EstadoListaEspera
+from .models import ListaEspera, EstadoListaEspera
 from django.conf import settings 
 
 @shared_task
@@ -20,7 +23,7 @@ def notificar_siguiente(clase_programada_id):
     
     if not siguiente:
         return
-    
+        
     # Actualiza estado a notificado
     siguiente.estado = EstadoListaEspera.NOTIFICADO
     siguiente.fecha_notificacion = timezone.now()
@@ -28,23 +31,28 @@ def notificar_siguiente(clase_programada_id):
     
     # Envía email
     subject = f'¡Cupo disponible en {clase_programada.clase.turno.actividad.nombre}!'
-    message = f"""
-Hola {siguiente.user.get_full_name()},
+    notificacion_url = f"{settings.SITE_URL.rstrip('/')}" + reverse('confirmar_desde_email', args=[siguiente.id])
 
-Se liberó un cupo en la clase de {clase_programada.clase.turno.actividad.nombre} 
-el {clase_programada.fecha} de {clase_programada.clase.hora_inicio} a {clase_programada.clase.hora_fin}.
+    html_message = render_to_string('mensaje_confirmacion.html', {
+        'titulo': '¡Confirmá o cancelá tu reserva!',
+        'usuario': siguiente.user,
+        'mensaje': 'Se liberó un cupo en la clase para la que estabas en lista de espera. Podés confirmar tu reserva o cancelar la notificación desde el enlace.',
+        'actividad': clase_programada.clase.turno.actividad.nombre,
+        'fecha': clase_programada.fecha,
+        'hora_inicio': clase_programada.clase.hora_inicio,
+        'hora_fin': clase_programada.clase.hora_fin,
+        'notificacion_url': notificacion_url,
+        'sitio_url': settings.SITE_URL,
+    })
 
-Tienes 2 horas para confirmar tu reserva.
+    text_message = strip_tags(html_message)
 
-Saludos,
-Centro Deportivo
-    """
-    
     send_mail(
         subject,
-        message,
+        text_message,
         settings.DEFAULT_FROM_EMAIL,
         [siguiente.user.email],
+        html_message=html_message,
         fail_silently=False,
     )
     
@@ -61,7 +69,7 @@ def verificar_confirmacion(lista_espera_id):
     
     entrada = ListaEspera.objects.get(id=lista_espera_id)
     
-    # Si ya confirmó, no hace nada
+    
     if entrada.estado == EstadoListaEspera.CONFIRMADO:
         return
     
@@ -70,5 +78,5 @@ def verificar_confirmacion(lista_espera_id):
         entrada.estado = EstadoListaEspera.EXPIRADO
         entrada.save()
         
-        # Notificar al siguiente
+
         notificar_siguiente.delay(entrada.clase_programada.id)

@@ -20,7 +20,7 @@ def reservas_disponibles(request):
     # CLASES INDIVIDUALES
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
-    #Clases de lista de espera (filtra por estados)
+    #Clases de lista de espera (filtrado por estados)
     clases_en_lista_espera_cancelados = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.CANCELADO).values_list('clase_programada_id', flat=True)
     clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.PENDIENTE).values_list('clase_programada_id', flat=True)
     # TURNOS
@@ -38,6 +38,21 @@ def reservas_disponibles(request):
         user=request.user,
         estado='ACTIVA'
     ).values_list('turno_id', flat=True)
+
+    #me devuelve el cupo disponible de la clase para la lista de espera(inscriptos + notificados)
+    for clase in clases_programadas:
+        reservas_activas = Reserva.objects.filter(
+            clase_programada=clase,
+            estado='ACTIVA'
+        ).count()
+        
+        notificados = ListaEspera.objects.filter(
+            clase_programada=clase,
+            estado=EstadoListaEspera.NOTIFICADO
+        ).count()
+        
+        cupo_real = clase.clase.cupo_maximo - (reservas_activas + notificados)
+        clase.cupo_real = cupo_real
 
     return render(request, 'reservas_disponibles.html', {
         'clases_programadas': clases_programadas,
@@ -86,6 +101,14 @@ def reserva_cancel(request, reserva_pk):
             reserva.estado = EstadoReserva.CANCELADA
             reserva.fecha_cancelacion = timezone.now()
             reserva.save()
+
+            if ListaEspera.objects.filter(
+                clase_programada=reserva.clase_programada,
+                estado=EstadoListaEspera.PENDIENTE
+            ).exists():
+                from lista_espera.tasks import notificar_siguiente
+                notificar_siguiente.delay(reserva.clase_programada.id)
+
             return redirect('reserva_list')
     else:
         form = ReservaCancelForm()

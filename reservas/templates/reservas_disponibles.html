@@ -193,7 +193,7 @@
                                                             <i class="fa-solid fa-ban me-1"></i> Te diste de baja de lista de espera
                                                         </button>
 
-                                                    {% elif clase_programada.cupo_actual >= clase_programada.clase.cupo_maximo %}
+                                                    {% elif clase_programada.cupo_real <= 0 %}
 
                                                         <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
                                                             <i class="fa-solid fa-ban me-1"></i> Sin cupos
