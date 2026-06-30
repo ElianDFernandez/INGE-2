@@ -56,8 +56,8 @@ def reserva_confirm(request, clase_programada_pk):
             reserva = form.save(commit=False)
             reserva.user = request.user
             reserva.clase_programada = clase_programada
-            # Regla de negocio: inicia pendiente de pago
-            reserva.estado = 'PENDIENTE_PAGO' 
+            # Regla de negocio: comienza iniciada
+            reserva.estado = 'INICIADA' 
             reserva.pago_confirmado = False
             reserva.save()
             
@@ -69,8 +69,10 @@ def reserva_confirm(request, clase_programada_pk):
             # 3. Integración con Mercado Pago
             sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
-            url_exito = request.build_absolute_uri(reverse('pago_exitoso', args=[reserva.id]))
-            url_fallo = request.build_absolute_uri(reverse('pago_fallido', args=[reserva.id]))
+            url_ngrok = "https://proven-energize-freckled.ngrok-free.dev"
+
+            url_exito = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-exitoso/"
+            url_fallo = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-fallido/"
 
             preference_data = {
                 "items": [
@@ -85,9 +87,9 @@ def reserva_confirm(request, clase_programada_pk):
                     "failure": url_fallo,
                     "pending": url_fallo
                 },
-                # "auto_return": "approved",
+                "auto_return": "approved",
             }
-
+           
             try:
                 preference_response = sdk.preference().create(preference_data)
                 print(">>> RESPUESTA CRUDA DE MP:", preference_response)
@@ -111,17 +113,23 @@ def reserva_confirm(request, clase_programada_pk):
 
 @login_required
 def pago_exitoso(request, reserva_id):
-    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
-    
+    reserva = get_object_or_404(Reserva, id=reserva_id)
     payment_id = request.GET.get('payment_id')
     
-    # Confirma reserva
-    reserva.estado = EstadoReserva.ACTIVA
-    reserva.pago_confirmado = True
-    reserva.mp_payment_id = payment_id
-    reserva.save()
-    
-    # Nota: restar cupo donde?
+    if payment_id:
+        reserva.mp_payment_id = payment_id
+        
+        # ESCENARIO 1: Acaba de pagar la seña (el primer 50%)
+        if reserva.estado == 'INICIADA':
+            reserva.estado = 'PENDIENTE_PAGO'
+            
+        # ESCENARIO 2: Acaba de pagar el restante (el segundo 50%)
+        elif reserva.estado == 'PENDIENTE_PAGO':
+            reserva.estado = 'ACTIVA'
+            reserva.pago_confirmado = True # Pagó el 100%
+            
+        reserva.save()
+        #Nota : restar cupo donde?
     
     messages.success(request, 'La operación se realizó correctamente. Tu reserva está confirmada.')
     return redirect('reserva_list')
@@ -140,7 +148,7 @@ def pago_fallido(request, reserva_id):
 @login_required
 def reserva_list(request):
     hoy = timezone.localdate()
-    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
     inscripciones = Inscripcion.objects.filter(user=request.user)
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
@@ -219,3 +227,40 @@ def inscripcion_cancel(request, inscripcion_pk):
         'clases_a_cancelar': clases_a_cancelar
     })
 
+@login_required
+def pagar_restante(request, reserva_id):
+    sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
+    
+    # Asegurarnos de que solo se pueda pagar el restante si está en el estado correcto
+    if reserva.estado != EstadoReserva.PENDIENTE_PAGO:
+        # Si alguien quiere hacer trampa, lo mandamos de vuelta
+        return redirect('nombre_de_tu_vista_mis_reservas')
+
+    precio_total = reserva.clase_programada.clase.costo
+    valor_restante = float(precio_total) / 2.0 
+    
+    url_ngrok = "https://proven-energize-freckled.ngrok-free.dev"
+    url_exito = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-exitoso/"
+    url_fallo = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-fallido/"
+
+    preference_data = {
+        "items": [
+            {
+                "title": f"Pago Restante: {reserva.clase_programada.clase.turno.actividad.nombre}",
+                "quantity": 1,
+                "unit_price": valor_restante,
+            }
+        ],
+        "back_urls": {
+            "success": url_exito,
+            "failure": url_fallo,
+            "pending": url_fallo
+        },
+        "auto_return": "approved",
+    }
+    
+    preference_response = sdk.preference().create(preference_data)
+    preference = preference_response["response"]
+    
+    return redirect(preference['sandbox_init_point'])

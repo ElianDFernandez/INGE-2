@@ -4,11 +4,12 @@ from django.utils import timezone
 from turnos.models import ClaseProgramada
 
 class EstadoReserva(models.TextChoices):
-    ACTIVA = 'ACTIVA', 'Activa'
+    INICIADA = 'INICIADA', 'Iniciada (En proceso de pago)'
+    ACTIVA = 'ACTIVA', 'Activa (Pagado 100%)'
     CANCELADA = 'CANCELADA', 'Cancelada'
     PRESENTE = 'PRESENTE', 'Presente'
     AUSENTE = 'AUSENTE', 'Ausente'
-    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Pendiente de Pago'
+    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Pendiente de Pago (Señada)'
 
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'
@@ -22,7 +23,7 @@ class Reserva(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='reservas')
     clase_programada = models.ForeignKey(ClaseProgramada, on_delete=models.CASCADE)
     fecha_reserva = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=20, choices=EstadoReserva.choices, default=EstadoReserva.ACTIVA)
+    estado = models.CharField(max_length=20, choices=EstadoReserva.choices, default=EstadoReserva.INICIADA)
     fecha_cancelacion = models.DateTimeField(null=True, blank=True)
     metodo_asistencia = models.CharField(max_length=20, choices=MetodoAsistencia.choices, null=True, blank=True, default=None)
     asistio = models.BooleanField(default=False)
@@ -94,3 +95,4 @@ class Inscripcion(models.Model):
                                    clase_programada=clase, 
                                    estado=EstadoReserva.ACTIVA
                                    ).update(estado=EstadoReserva.CANCELADA)
+
