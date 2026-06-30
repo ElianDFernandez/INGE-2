@@ -1,6 +1,5 @@
 from django.urls import path
-from .views import (reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia,  reservas_disponibles,inscripcion_confirm, inscripcion_cancel)
-
+from .views import (reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia,  reservas_disponibles, inscripcion_confirm, inscripcion_cancel, pago_exitoso, pago_fallido, pagar_restante)
 urlpatterns = [
     # Panel de Mis Reservas
     path('', reserva_list, name='reserva_list'),
