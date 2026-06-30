@@ -57,17 +57,40 @@
                         </tr>
                     </tbody>
                 </table>
+
+                {% if tiene_vales %}
+                <!-- Información del vale disponible -->
+                <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                    <i class="bi bi-ticket-perforated me-2"></i>
+                    <div>
+                        Tenés <strong>{{ vales_disponibles.count }}</strong> vale{{ vales_disponibles.count|pluralize:"s" }} disponible{{ vales_disponibles.count|pluralize:"s" }} para <strong>{{ clase_programada.clase.turno.actividad.nombre }}</strong>.
+                        Podés usar uno para reservar sin costo.
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- form -->
                 <form method="post">
                     {% csrf_token %}
-                    {{ form.as_p }}
                     <div class="d-flex justify-content-end mt-4">
                         <a href="{% url 'reservas_disponibles' %}" class="btn btn-light border me-2">
                             Cancelar
                         </a>
+                        {% if tiene_vales %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="usar_vale" value="true" class="btn btn-success">
+                                <i class="bi bi-ticket-perforated me-1"></i>
+                                Reservar con vale
+                            </button>
+                            <button type="submit" class="btn btn-main-cad">
+                                Señar (${{ valor_sena|floatformat:2 }})
+                            </button>
+                        </div>
+                        {% else %}
                         <button type="submit" class="btn btn-main-cad">
                             Señar (${{ valor_sena|floatformat:2 }})
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

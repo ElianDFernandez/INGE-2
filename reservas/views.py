@@ -66,61 +66,83 @@ def reserva_confirm(request, clase_programada_pk):
         messages.error(request, 'No hay cupo disponible para esta clase.')
         return redirect('reservas_disponibles')
 
+    # Verificar vales disponibles para esta actividad
+    actividad = clase_programada.clase.turno.actividad
+    vales_disponibles = request.user.vales.filter(
+        actividad=actividad,
+        usado=False,
+        fecha_vencimiento__gte=timezone.localdate()
+    )
+    tiene_vales = vales_disponibles.exists()
+
     if request.method == 'POST':
         form = ReservaForm(request.POST, user=request.user, clase_programada=clase_programada)
         if form.is_valid():
-            # 1. Crea la reserva sin guardarla definitivamente para ajustar el estado
-            reserva = form.save(commit=False)
-            reserva.user = request.user
-            reserva.clase_programada = clase_programada
-            # Regla de negocio: comienza iniciada
-            reserva.estado = 'INICIADA' 
-            reserva.pago_confirmado = False
-            reserva.save()
-            
-            # 2. Regla de negocio: Calcular el 50% de la seña
+            usar_vale = 'usar_vale' in request.POST
 
-            valor_total = float(clase_programada.clase.costo)
-            valor_sena = valor_total * 0.50
-            
-            # 3. Integración con Mercado Pago
-            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            if usar_vale and tiene_vales:
+                # CASO: Usar vale → crear reserva ACTIVA directamente, sin pasar por MP
+                vale = vales_disponibles.first()
+                vale.usar()
 
-            url_exito = f"{URL_NGROK}/reservas/reserva/{reserva.id}/pago-exitoso/"
-            url_fallo = f"{URL_NGROK}/reservas/reserva/{reserva.id}/pago-fallido/"
+                reserva = Reserva.objects.create(
+                    user=request.user,
+                    clase_programada=clase_programada,
+                    estado=EstadoReserva.ACTIVA,
+                    pago_confirmado=True,
+                )
 
-            preference_data = {
-                "items": [
-                    {
-                        "title": f"Seña Reserva: {clase_programada.clase.turno.actividad.nombre}",
-                        "quantity": 1,
-                        "unit_price": float(valor_sena),
-                    }
-                ],
-                "back_urls": {
-                    "success": url_exito,
-                    "failure": url_fallo,
-                    "pending": url_fallo
-                },
-                "auto_return": "approved",
-            }
-           
-            try:
-                preference_response = sdk.preference().create(preference_data)
-                print(">>> RESPUESTA CRUDA DE MP:", preference_response)
-                preference = preference_response["response"]
-                
-                reserva.mp_preference_id = preference['id']
+                messages.success(request, f'Reserva confirmada con vale. Vale para {actividad.nombre} utilizado.')
+                return redirect('reserva_list')
+
+            else:
+                # CASO: Pago normal por MercadoPago (seña 50%)
+                reserva = form.save(commit=False)
+                reserva.user = request.user
+                reserva.clase_programada = clase_programada
+                reserva.estado = 'INICIADA' 
+                reserva.pago_confirmado = False
                 reserva.save()
                 
-                # Redirige a MP
-                return redirect(preference['sandbox_init_point']) 
+                valor_total = float(clase_programada.clase.costo)
+                valor_sena = valor_total * 0.50
+                
+                sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
 
-            except Exception as e:
-                print(">>> ERROR EN PYTHON:", e)
-                reserva.delete() # Limpiamos la base de datos si falló la conexión
-                messages.error(request, 'Error en el pago de la seña. No se ha podido establecer la conexión. Intente más tarde.')
-                return redirect('reservas_disponibles')
+                url_exito = f"{URL_NGROK}/reservas/reserva/{reserva.id}/pago-exitoso/"
+                url_fallo = f"{URL_NGROK}/reservas/reserva/{reserva.id}/pago-fallido/"
+
+                preference_data = {
+                    "items": [
+                        {
+                            "title": f"Seña Reserva: {clase_programada.clase.turno.actividad.nombre}",
+                            "quantity": 1,
+                            "unit_price": float(valor_sena),
+                        }
+                    ],
+                    "back_urls": {
+                        "success": url_exito,
+                        "failure": url_fallo,
+                        "pending": url_fallo
+                    },
+                    "auto_return": "approved",
+                }
+           
+                try:
+                    preference_response = sdk.preference().create(preference_data)
+                    print(">>> RESPUESTA CRUDA DE MP:", preference_response)
+                    preference = preference_response["response"]
+                    
+                    reserva.mp_preference_id = preference['id']
+                    reserva.save()
+                    
+                    return redirect(preference['sandbox_init_point']) 
+
+                except Exception as e:
+                    print(">>> ERROR EN PYTHON:", e)
+                    reserva.delete()
+                    messages.error(request, 'Error en el pago de la seña. No se ha podido establecer la conexión. Intente más tarde.')
+                    return redirect('reservas_disponibles')
     else:
         form = ReservaForm(user=request.user, clase_programada=clase_programada)
 
@@ -130,6 +152,8 @@ def reserva_confirm(request, clase_programada_pk):
         'form': form,
         'clase_programada': clase_programada,
         'valor_sena': valor_sena,
+        'tiene_vales': tiene_vales,
+        'vales_disponibles': vales_disponibles,
     })
 
 @login_required
@@ -201,6 +225,7 @@ def reserva_cancel(request, reserva_pk):
 
     pagado = reserva.estado in (EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO)
     pago_total = reserva.estado == EstadoReserva.ACTIVA
+    pagado_con_vale = pago_total and not reserva.mp_payment_id
 
     if es_abonado:
         if pago_total and anticipacion >= timedelta(hours=48):
@@ -210,9 +235,9 @@ def reserva_cancel(request, reserva_pk):
         else:
             resultado_cancelacion = 'sin_pago'
     else:
-        if pagado and anticipacion >= timedelta(hours=24):
+        if pagado and anticipacion >= timedelta(hours=24) and not pagado_con_vale:
             resultado_cancelacion = 'devuelve_total' if pago_total else 'devuelve_sena'
-        elif pagado:
+        elif pagado and not pagado_con_vale:
             resultado_cancelacion = 'pierde_total' if pago_total else 'pierde_sena'
         else:
             resultado_cancelacion = 'sin_pago'

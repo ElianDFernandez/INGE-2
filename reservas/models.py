@@ -134,7 +134,6 @@ class Inscripcion(models.Model):
             user=self.user,
             clase_programada__in=clases_programadas,
             estado=EstadoReserva.ACTIVA,
-            pago_confirmado=True
         )
 
         vales_creados = 0
