@@ -5,15 +5,12 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
-<<<<<<< HEAD
 import mercadopago
 from django.conf import settings
-=======
 from django.http import HttpResponse
 
 from io import BytesIO
 import qrcode
->>>>>>> 8939fcab54478ec7546474f07e985766a0f099bb
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
