@@ -9,3 +9,10 @@ class ActividadForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def clean_nombre(self):
+        nombre_ingresado = self.cleaned_data.get('nombre').strip()
+        if Actividad.objects.filter(nombre__iexact=nombre_ingresado).exists():
+            raise forms.ValidationError('Esta actividad ya existe.')
+        return nombre_ingresado
+    
