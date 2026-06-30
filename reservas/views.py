@@ -6,6 +6,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+import mercadopago
+from django.conf import settings
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
@@ -47,24 +49,107 @@ def reservas_disponibles(request):
 @login_required
 def reserva_confirm(request, clase_programada_pk):
     clase_programada = get_object_or_404(ClaseProgramada, pk=clase_programada_pk, clase__activo=True, clase__turno__activo=True)
+    
     if request.method == 'POST':
         form = ReservaForm(request.POST, user=request.user, clase_programada=clase_programada)
         if form.is_valid():
+            # 1. Crea la reserva sin guardarla definitivamente para ajustar el estado
             reserva = form.save(commit=False)
             reserva.user = request.user
             reserva.clase_programada = clase_programada
+            # Regla de negocio: comienza iniciada
+            reserva.estado = 'INICIADA' 
+            reserva.pago_confirmado = False
             reserva.save()
-            messages.success(request, f'¡Excelente! Tu reserva para el {clase_programada.clase.get_dia_display()} a las {clase_programada.clase.hora_inicio} hs ha sido confirmada.')
-            return redirect('reservas_disponibles')
+            
+            # 2. Regla de negocio: Calcular el 50% de la seña
+
+            valor_total = float(clase_programada.clase.costo)
+            valor_sena = valor_total * 0.50
+            
+            # 3. Integración con Mercado Pago
+            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+            url_ngrok = "https://proven-energize-freckled.ngrok-free.dev"
+
+            url_exito = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-exitoso/"
+            url_fallo = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-fallido/"
+
+            preference_data = {
+                "items": [
+                    {
+                        "title": f"Seña Reserva: {clase_programada.clase.turno.actividad.nombre}",
+                        "quantity": 1,
+                        "unit_price": float(valor_sena),
+                    }
+                ],
+                "back_urls": {
+                    "success": url_exito,
+                    "failure": url_fallo,
+                    "pending": url_fallo
+                },
+                "auto_return": "approved",
+            }
+           
+            try:
+                preference_response = sdk.preference().create(preference_data)
+                print(">>> RESPUESTA CRUDA DE MP:", preference_response)
+                preference = preference_response["response"]
+                
+                reserva.mp_preference_id = preference['id']
+                reserva.save()
+                
+                # Redirige a MP
+                return redirect(preference['sandbox_init_point']) 
+
+            except Exception as e:
+                print(">>> ERROR EN PYTHON:", e)
+                reserva.delete() # Limpiamos la base de datos si falló la conexión
+                messages.error(request, 'Error en el pago de la seña. No se ha podido establecer la conexión. Intente más tarde.')
+                return redirect('reservas_disponibles')
     else:
         form = ReservaForm(user=request.user, clase_programada=clase_programada)
 
     return render(request, 'reservas/reserva_confirm.html', {'form': form, 'clase_programada': clase_programada})
 
 @login_required
+def pago_exitoso(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    payment_id = request.GET.get('payment_id')
+    
+    if payment_id:
+        reserva.mp_payment_id = payment_id
+        
+        # ESCENARIO 1: Acaba de pagar la seña (el primer 50%)
+        if reserva.estado == 'INICIADA':
+            reserva.estado = 'PENDIENTE_PAGO'
+            
+        # ESCENARIO 2: Acaba de pagar el restante (el segundo 50%)
+        elif reserva.estado == 'PENDIENTE_PAGO':
+            reserva.estado = 'ACTIVA'
+            reserva.pago_confirmado = True # Pagó el 100%
+            
+        reserva.save()
+        #Nota : restar cupo donde?
+    
+    messages.success(request, 'La operación se realizó correctamente. Tu reserva está confirmada.')
+    return redirect('reserva_list')
+
+@login_required
+def pago_fallido(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
+    
+    # Cancela reserva por falta de pago
+    reserva.estado = EstadoReserva.CANCELADA
+    reserva.save()
+    
+    messages.error(request, 'El pago no pudo procesarse. Tu reserva ha sido cancelada.')
+    return redirect('reserva_list')
+
+@login_required
 def reserva_list(request):
     hoy = timezone.localdate()
-    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
     inscripciones = Inscripcion.objects.filter(user=request.user)
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
@@ -224,3 +309,40 @@ def simular_reembolso(request, reserva_pk):
         'reserva': reserva,
         'monto_devuelto': monto_devuelto,
     })
+
+def pagar_restante(request, reserva_id):
+    sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+    reserva = get_object_or_404(Reserva, id=reserva_id, user=request.user)
+    
+    # Asegurarnos de que solo se pueda pagar el restante si está en el estado correcto
+    if reserva.estado != EstadoReserva.PENDIENTE_PAGO:
+        # Si alguien quiere hacer trampa, lo mandamos de vuelta
+        return redirect('nombre_de_tu_vista_mis_reservas')
+
+    precio_total = reserva.clase_programada.clase.costo
+    valor_restante = float(precio_total) / 2.0 
+    
+    url_ngrok = "https://proven-energize-freckled.ngrok-free.dev"
+    url_exito = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-exitoso/"
+    url_fallo = f"{url_ngrok}/reservas/reserva/{reserva.id}/pago-fallido/"
+
+    preference_data = {
+        "items": [
+            {
+                "title": f"Pago Restante: {reserva.clase_programada.clase.turno.actividad.nombre}",
+                "quantity": 1,
+                "unit_price": valor_restante,
+            }
+        ],
+        "back_urls": {
+            "success": url_exito,
+            "failure": url_fallo,
+            "pending": url_fallo
+        },
+        "auto_return": "approved",
+    }
+    
+    preference_response = sdk.preference().create(preference_data)
+    preference = preference_response["response"]
+    
+    return redirect(preference['sandbox_init_point'])
