@@ -30,7 +30,7 @@
                     </div>
                 </div>
                 <h5 style="color: #333; font-weight: 600;">¡Devolución procesada!</h5>
-                {% if reserva.pago_total_confirmado %}
+                {% if reserva.pago_confirmado %}
                     <p class="text-muted mb-1">El pago total de la clase fue devuelto a tu cuenta.</p>
                 {% else %}
                     <p class="text-muted mb-1">La seña abonada fue devuelta a tu cuenta.</p>
@@ -61,7 +61,7 @@
                     <div style="font-size: 1.8rem; font-weight: 700; color: #00a650;">
                         ${{ monto_devuelto }}
                     </div>
-                    {% if not reserva.pago_total_confirmado %}
+                    {% if not reserva.pago_confirmado %}
                         <small class="text-muted">Seña (50% del costo de la clase)</small>
                     {% endif %}
                 </div>

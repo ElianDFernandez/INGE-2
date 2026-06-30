@@ -39,7 +39,7 @@ class Reserva(models.Model):
 
     @property
     def corresponde_devolucion(self):
-        if self.estado == EstadoReserva.CANCELADA and (self.pago_confirmado or self.pago_total_confirmado) and not self.clase_programada.ya_empezo:
+        if self.estado == EstadoReserva.CANCELADA and self.mp_payment_id and not self.clase_programada.ya_empezo:
             if self.fecha_cancelacion:
                 fecha_hora_clase = datetime.combine(
                     self.clase_programada.fecha, 
@@ -162,4 +162,6 @@ class Inscripcion(models.Model):
             reserva.desactivar(informar=por_modificacion_empleado, motivo='El turno fue modificado' if por_modificacion_empleado else '', por_empleado=por_modificacion_empleado)
 
         return vales_creados
+
+    
 

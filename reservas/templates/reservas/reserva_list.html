@@ -77,6 +77,9 @@
                                     <a href="{% url 'pagar_restante' reserva.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap mb-1 mb-md-0 me-md-1">
                                         <i class="fa-solid fa-credit-card me-1"></i> Pagar Restante
                                     </a>
+                                    <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                                    </a>
                                     {% endif %}
 
                                     {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo %}
