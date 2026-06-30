@@ -55,12 +55,17 @@ def registrar_asistencia(request, reserva_id):
 def registrar_pago(request, reserva_id):
     if request.method == 'POST':
         reserva = get_object_or_404(Reserva, id=reserva_id)
+        
+        # Guardamos los datos del pago
         reserva.pago_confirmado = True 
         reserva.metodo_pago = 'MANUAL'
+        
+        reserva.estado = 'ACTIVA' 
+        # -----------------------------------
+        
         reserva.save()
         messages.success(request, f"Pago registrado con éxito para la clase de {reserva.user.username}.")
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
-
 
 @login_required
 @staff_member_required(login_url='home')
