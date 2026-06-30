@@ -131,7 +131,8 @@ class Clase(models.Model):
         # me salteo la generacion de hoy si la clase ya hubiese terminado o quedan menos de margen horas para que arranque
         inicio_hoy = timezone.make_aware(datetime.combine(fecha, self.hora_inicio))
         margen_horas = 2
-        if timezone.localtime() >= inicio_hoy - timedelta(hours=margen_horas):
+        margen_minutos = 15
+        if timezone.localtime() >= inicio_hoy - timedelta(minutes=margen_minutos):
             fecha += timedelta(days=1)
 
         while fecha.weekday() != dias[self.dia]:
@@ -260,6 +261,12 @@ class ClaseProgramada(models.Model):
         margen_despues = timezone.make_aware(margen_despues) + timedelta(minutes=margen)
 
         return margen_antes <= ahora and ahora <= margen_despues
+
+    @property
+    def puede_reservarse(self):
+        from datetime import datetime, timedelta
+        inicio = timezone.make_aware(datetime.combine(self.fecha, self.clase.hora_inicio))
+        return timezone.localtime() <= inicio - timedelta(minutes=15)
     
     def cancelar(self, informar = False, motivo = ''):
         from reservas.models import EstadoReserva

@@ -27,6 +27,8 @@ def reservas_disponibles(request):
     # CLASES INDIVIDUALES
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
+    clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
+
     # TURNOS
     turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
         Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).order_by('dia', 'hora_inicio').prefetch_related(
