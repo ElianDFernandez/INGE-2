@@ -22,7 +22,7 @@ def reservas_disponibles(request):
     hoy = timezone.localdate()
     # CLASES INDIVIDUALES
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
-    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
+    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
     # TURNOS
     turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
         Prefetch('clase_set', queryset=Clase.objects.filter(activo=True).order_by('dia', 'hora_inicio').prefetch_related(
@@ -51,6 +51,21 @@ def reservas_disponibles(request):
 def reserva_confirm(request, clase_programada_pk):
     clase_programada = get_object_or_404(ClaseProgramada, pk=clase_programada_pk, clase__activo=True, clase__turno__activo=True)
     
+    # Validar que no tenga ya una reserva activa/señada para esta clase
+    ya_reservado = Reserva.objects.filter(
+        user=request.user,
+        clase_programada=clase_programada,
+        estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]
+    ).exists()
+    if ya_reservado:
+        messages.warning(request, 'Ya tenés una reserva para esta clase.')
+        return redirect('reservas_disponibles')
+
+    # Validar que haya cupo disponible
+    if clase_programada.cupo_actual() >= clase_programada.clase.cupo_maximo:
+        messages.error(request, 'No hay cupo disponible para esta clase.')
+        return redirect('reservas_disponibles')
+
     if request.method == 'POST':
         form = ReservaForm(request.POST, user=request.user, clase_programada=clase_programada)
         if form.is_valid():

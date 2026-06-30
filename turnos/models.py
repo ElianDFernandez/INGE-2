@@ -87,7 +87,7 @@ class Turno(models.Model):
         from reservas.models import EstadoReserva
         clases_futuras = self.get_clases_programadas().filter(fecha__gte=timezone.localdate())
         resultado = clases_futuras.annotate(
-            num_reservas=Count('reserva', filter=Q(reserva__estado=EstadoReserva.ACTIVA))
+            num_reservas=Count('reserva', filter=Q(reserva__estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]))
         ).aggregate(max_r=Max('num_reservas'))
 
         return resultado['max_r'] or 0
@@ -225,8 +225,8 @@ class ClaseProgramada(models.Model):
         return dias[self.fecha.weekday()]
 
     def cupo_actual(self):
-        # estado está hardcodeado y no lo saco del choices de reservas pq los import quedan circular
-        return self.reserva_set.filter(estado='ACTIVA').count()
+        """Cuenta reservas que ocupan cupo: ACTIVA (pagada 100%) y PENDIENTE_PAGO (señada)."""
+        return self.reserva_set.filter(estado__in=['ACTIVA', 'PENDIENTE_PAGO']).count()
     
     @property
     def ya_empezo(self):
