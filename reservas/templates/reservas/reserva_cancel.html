@@ -13,9 +13,52 @@
                 </h3>
             </div>
             <div class="card-body">
-                <p class="mb-4">
+                <p class="mb-3">
                     ¿Estás seguro de que querés cancelar la reserva a esta clase?
                 </p>
+                {% if resultado_cancelacion == 'vale' %}
+                    <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-ticket me-2"></i>
+                        <div>
+                            Se generará un <strong>vale</strong> para la actividad <strong>{{ reserva.clase_programada.clase.turno.actividad.nombre }}</strong> (válido hasta fin de mes).
+                        </div>
+                    </div>
+                {% elif resultado_cancelacion == 'pierde' %}
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                        <div>
+                            La clase se cancelará <strong>sin generación de vale</strong> por cancelar con menos de 48hs de anticipación.
+                        </div>
+                    </div>
+                {% elif resultado_cancelacion == 'devuelve_total' %}
+                    <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-money-bill-wave me-2"></i>
+                        <div>
+                            Se te <strong>devolverá el monto total</strong> abonado por esta reserva.
+                        </div>
+                    </div>
+                {% elif resultado_cancelacion == 'devuelve_sena' %}
+                    <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-money-bill-wave me-2"></i>
+                        <div>
+                            Se te <strong>devolverá la seña</strong> abonada por esta reserva.
+                        </div>
+                    </div>
+                {% elif resultado_cancelacion == 'pierde_total' %}
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                        <div>
+                            El pago <strong>se perderá</strong> por cancelar con menos de 24hs de anticipación.
+                        </div>
+                    </div>
+                {% elif resultado_cancelacion == 'pierde_sena' %}
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                        <div>
+                            La seña <strong>se perderá</strong> por cancelar con menos de 24hs de anticipación.
+                        </div>
+                    </div>
+                {% endif %}
                 <table class="table">
                     <tbody>
                         <tr>

@@ -87,10 +87,21 @@ class Turno(models.Model):
         from reservas.models import EstadoReserva
         clases_futuras = self.get_clases_programadas().filter(fecha__gte=timezone.localdate())
         resultado = clases_futuras.annotate(
-            num_reservas=Count('reserva', filter=Q(reserva__estado=EstadoReserva.ACTIVA))
+            num_reservas=Count('reserva', filter=Q(reserva__estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]))
         ).aggregate(max_r=Max('num_reservas'))
 
         return resultado['max_r'] or 0
+    
+    def esta_en_curso_ahora(self):
+        from django.utils import timezone
+        hoy = timezone.localdate()
+        ahora = timezone.localtime().time()
+        return self.clase_set.filter(
+            activo=True,
+            claseprogramada__fecha=hoy,
+            hora_inicio__lte=ahora,
+            hora_fin__gte=ahora
+        ).exists()
 
 class Clase(models.Model):
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
@@ -104,13 +115,17 @@ class Clase(models.Model):
 
     def generar_clases_programadas(self):
         from reservas.models import Reserva, EstadoReserva
-
+        from django.utils import timezone
+        from datetime import timedelta
         dias = {
             'LUNES': 0, 'MARTES': 1, 'MIERCOLES': 2, 'JUEVES': 3,
             'VIERNES': 4, 'SABADO': 5, 'DOMINGO': 6,
         }
-
-        fecha = timezone.localdate()
+        ahora = timezone.localtime()
+        hoy = ahora.date()
+        hora_actual = ahora.time()
+        
+        fecha = hoy
         cur_mes = fecha.month
 
         # me salteo la generacion de hoy si la clase ya hubiese terminado o quedan menos de margen horas para que arranque
@@ -121,10 +136,11 @@ class Clase(models.Model):
 
         while fecha.weekday() != dias[self.dia]:
             fecha += timedelta(days=1)
-        
+        if fecha == hoy and hora_actual >= self.hora_inicio:
+            fecha += timedelta(days=7)
         inscripciones_activas = self.turno.inscripcion_set.filter(estado='ACTIVA').select_related('user')
         reservas_a_crear = []
-        while (fecha.month==cur_mes):
+        while (fecha.month == cur_mes):
             cp, created = ClaseProgramada.objects.get_or_create(clase=self, fecha=fecha)
             if created:
                 for inscripcion in inscripciones_activas:
@@ -201,20 +217,30 @@ class Clase(models.Model):
         reservas_activas = Reserva.objects.filter(clase_programada__clase=self, estado=EstadoReserva.ACTIVA)
         for reserva in reservas_activas:
             reserva.desactivar(informar, motivo)
-
+            reserva.devolver_pago()
 
 class ClaseProgramada(models.Model):
     clase = models.ForeignKey(Clase, on_delete=models.CASCADE)
     fecha = models.DateField()
+    class Meta:
+        ordering = ['fecha', 'clase__hora_inicio']
+        unique_together = ('clase', 'fecha')
 
     def dia(self):
         dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
         return dias[self.fecha.weekday()]
 
     def cupo_actual(self):
-        # estado está hardcodeado y no lo saco del choices de reservas pq los import quedan circular
-        return self.reserva_set.filter(estado='ACTIVA').count()
+        """Cuenta reservas que ocupan cupo: ACTIVA (pagada 100%) y PENDIENTE_PAGO (señada)."""
+        return self.reserva_set.filter(estado__in=['ACTIVA', 'PENDIENTE_PAGO']).count()
     
+    @property
+    def ya_empezo(self):
+        from datetime import datetime
+        fecha_hora_inicio = datetime.combine(self.fecha, self.clase.hora_inicio)
+        fecha_hora_inicio_aware = timezone.make_aware(fecha_hora_inicio)
+        return timezone.now() > fecha_hora_inicio_aware
+
     @property
     def ya_finalizo(self):
         from datetime import datetime
@@ -234,7 +260,9 @@ class ClaseProgramada(models.Model):
         margen_despues = timezone.make_aware(margen_despues) + timedelta(minutes=margen)
 
         return margen_antes <= ahora and ahora <= margen_despues
-
-    class Meta:
-        ordering = ['fecha', 'clase__hora_inicio']
-        unique_together = ('clase', 'fecha')
+    
+    def cancelar(self, informar = False, motivo = ''):
+        from reservas.models import EstadoReserva
+        reservas_activas = self.reserva_set.filter(estado=EstadoReserva.ACTIVA)
+        for reserva in reservas_activas:
+            reserva.desactivar(informar, motivo)

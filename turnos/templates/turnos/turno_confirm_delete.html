@@ -9,25 +9,40 @@
             <div class="card-body text-center p-5">
                 <i class="fa-solid fa-triangle-exclamation text-danger fa-3x mb-3"></i>
                 <h3 class="text-danger">Eliminar Turno</h3>
-                <p class="fs-5 mt-3">¿Estás seguro que querés eliminar el turno <strong>"{{ object.nombre }}"</strong>?</p>
-                <p class="text-muted small">Esto eliminará todas sus clases asociadas.</p>
+                <p class="fs-5 mt-3">¿Estás seguro que querés eliminar el turno <strong>"{{ object.nombre }}"</strong> de <strong>{{ object.actividad.nombre }}</strong>?</p>
 
-                {% if object.tiene_reservas %}
-                    <div class="alert alert-warning text-start mt-3 mb-0" role="alert">
-                        <i class="fa-solid fa-lock me-2"></i>
-                        No se puede eliminar porque tiene reservas activas asociadas.
+                {% if en_curso %}
+                    <div class="alert alert-danger text-start mt-3 mb-0" role="alert">
+                        <i class="fa-solid fa-ban me-2"></i>
+                        No se puede eliminar porque el turno está en transcurso.
                     </div>
-                {% endif %}
-                
-                <form method="post" class="mt-4">
-                    {% csrf_token %}
-                    <a href="{% url 'turno_list' %}" class="btn btn-light border me-2">Cancelar</a>
-                    {% if not object.tiene_reservas %}
-                        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                    <div class="mt-4">
+                        <a href="{% url 'turno_list' %}" class="btn btn-light border">Volver</a>
+                    </div>
+                {% else %}
+                    {% if inscripciones_activas > 0 or reservas_individuales > 0 %}
+                        <div class="alert alert-warning text-start mt-3" role="alert">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Al eliminar este turno se afectará a los siguientes socios:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% if inscripciones_activas > 0 %}
+                                    <li>{{ inscripciones_activas }} inscripci{{ inscripciones_activas|pluralize:"ón,ones" }} activa{{ inscripciones_activas|pluralize }} — se cancelarán las inscripciones, reservas y se generarán los reembolsos correspondientes.</li>
+                                {% endif %}
+                                {% if reservas_individuales > 0 %}
+                                    <li>{{ reservas_individuales }} reserva{{ reservas_individuales|pluralize }} a clase{{ reservas_individuales|pluralize }} individual{{ reservas_individuales|pluralize }} — se cancelarán y se devolverá el monto abonado que corresponda.</li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     {% else %}
-                        <button type="button" class="btn btn-danger" disabled>No disponible</button>
+                        <p class="text-muted small">El turno no tiene inscripciones ni reservas activas. Se eliminarán todas sus clases asociadas.</p>
                     {% endif %}
-                </form>
+                    
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <a href="{% url 'turno_list' %}" class="btn btn-light border me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                    </form>
+                {% endif %}
             </div>
         </div>
     </div>

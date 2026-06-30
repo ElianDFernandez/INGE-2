@@ -192,6 +192,8 @@ def registro(request):
 
 @login_required
 def home(request):
+    if request.user.is_superuser:
+        return metricas(request)
     return render(request, 'app/home.html', contexto_home(request.user))
 
 @login_required
@@ -221,3 +223,131 @@ def contexto_home(usuario):
         return empleado.get_contexto_home()
 
     return {}
+
+@login_required
+def metricas(request):
+    if not request.user.is_superuser:
+        return redirect('home')
+
+    from django.db.models import Sum, Count, F, Q, Exists, OuterRef
+    from django.utils import timezone
+    from datetime import date
+    from reservas.models import Reserva, EstadoReserva, Inscripcion, EstadoInscripcion
+    from turnos.models import ClaseProgramada
+    from socios.models import Socio
+
+    hoy = timezone.localdate()
+    hoy_dt = timezone.now()
+
+    # ── Socios ──
+    socios_activos = Socio.objects.filter(is_active=True).count()
+
+    users_abonados = Inscripcion.objects.filter(
+        estado=EstadoInscripcion.ACTIVA
+    ).values_list('user_id', flat=True).distinct()
+    abonados = users_abonados.count()
+    ocasionales = max(0, socios_activos - abonados)
+
+    suspendidos = 0  # No hay mecanismo de suspensión implementado
+
+    # ── Ocupación ──
+    clases_mes = ClaseProgramada.objects.filter(
+        fecha__year=hoy.year, fecha__month=hoy.month, clase__activo=True
+    )
+    ocupacion = clases_mes.aggregate(
+        total_ocupados=Count('reserva', filter=Q(reserva__estado=EstadoReserva.ACTIVA)),
+        total_capacidad=Sum('clase__cupo_maximo')
+    )
+    total_ocupados = ocupacion['total_ocupados'] or 0
+    total_capacidad = ocupacion['total_capacidad'] or 0
+    porcentaje_ocupacion = round((total_ocupados / total_capacidad) * 100) if total_capacidad > 0 else 0
+
+    # ── Horarios con mayor/menor demanda ──
+    horarios = (
+        Reserva.objects.filter(
+            clase_programada__fecha__year=hoy.year,
+            clase_programada__fecha__month=hoy.month,
+            estado=EstadoReserva.ACTIVA
+        )
+        .values(hora_inicio=F('clase_programada__clase__hora_inicio'))
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+
+    # ── Reservas y cancelaciones ──
+    reservas_mes = Reserva.objects.filter(
+        clase_programada__fecha__year=hoy.year,
+        clase_programada__fecha__month=hoy.month
+    )
+    reservas_activas = reservas_mes.filter(estado=EstadoReserva.ACTIVA).count()
+    reservas_canceladas = reservas_mes.filter(estado=EstadoReserva.CANCELADA).count()
+
+    # ── Ingresos ──
+    # Por inscripción: siempre cuenta (nunca se devuelve la plata)
+    # Individual: solo cuenta si no fue reembolsada (sena_devuelta=False)
+    inscripcion_activa = Inscripcion.objects.filter(
+        user_id=OuterRef('user_id'),
+        turno_id=OuterRef('clase_programada__clase__turno_id'),
+        estado=EstadoInscripcion.ACTIVA
+    )
+    ingresos = reservas_mes.filter(
+        pago_confirmado=True
+    ).annotate(
+        tiene_inscripcion=Exists(inscripcion_activa)
+    ).filter(
+        Q(tiene_inscripcion=True) | Q(sena_devuelta=False)
+    ).aggregate(total=Sum('clase_programada__clase__costo'))
+    ingresos_mes = ingresos['total'] or 0
+
+    # ── Morosidad ──
+    morosos = Reserva.objects.filter(
+        clase_programada__fecha__lt=hoy,
+        pago_confirmado=False,
+        estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PRESENTE, EstadoReserva.AUSENTE]
+    ).count()
+
+    # ── Asistencia ──
+    presentes = reservas_mes.filter(estado=EstadoReserva.PRESENTE).count()
+    ausentes = reservas_mes.filter(estado=EstadoReserva.AUSENTE).count()
+
+    # ── Listas de espera ──
+    listas_espera = 0  # No implementado
+
+    # ── ¿Hay datos? ──
+    hay_datos = any([
+        socios_activos, total_capacidad,
+        reservas_activas, reservas_canceladas, presentes, ausentes
+    ])
+
+    meses_es = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+
+    return render(request, 'app/metricas.html', {
+        'hoy': hoy,
+        'mes_nombre': meses_es[hoy.month - 1],
+        'hay_datos': hay_datos,
+        # Socios
+        'socios_activos': socios_activos,
+        'abonados': abonados,
+        'ocasionales': ocasionales,
+        'suspendidos': suspendidos,
+        # Ocupación
+        'total_ocupados': total_ocupados,
+        'total_capacidad': total_capacidad,
+        'porcentaje_ocupacion': porcentaje_ocupacion,
+        # Horarios
+        'horarios': horarios,
+        # Reservas
+        'reservas_activas': reservas_activas,
+        'reservas_canceladas': reservas_canceladas,
+        # Finanzas
+        'ingresos_mes': ingresos_mes,
+        'morosos': morosos,
+        # Asistencia
+        'presentes': presentes,
+        'ausentes': ausentes,
+        # Listas de espera
+        'listas_espera': listas_espera,
+    })

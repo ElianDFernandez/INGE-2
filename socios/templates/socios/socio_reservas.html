@@ -26,6 +26,7 @@
                         <tr>
                             <th class="ps-4">Fecha</th>
                             <th>Actividad</th>
+                            <th>Turno</th>
                             <th>Horario</th>
                             <th>Estado</th>
                             <th>Asistencia</th>
@@ -39,6 +40,7 @@
                         <tr class="{% if reserva.estado|lower == 'cancelada' %}text-muted fila-cancelada{% endif %}">
                             <td class="ps-4">{{ reserva.clase_programada.dia }} {{ reserva.clase_programada.fecha|date:"d/m/Y" }}</td>
                             <td>{{ reserva.clase_programada.clase.turno.actividad.nombre|default:"-" }}</td>
+                            <td>{{ reserva.clase_programada.clase.turno.nombre|default:"-" }}</td>
                             <td>{{ reserva.clase_programada.clase.hora_inicio|time:"H:i" }} hs</td>
                             <td>
                                 {% if reserva.estado|lower == 'cancelada' %}
@@ -83,12 +85,12 @@
                                         {% if not reserva.sena_devuelta %}
                                             <form action="{% url 'registrar_devolucion' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-outline-warning mb-1" title="Canceló con más de 24hs">
-                                                    <i class="fa-solid fa-rotate-left me-1"></i> Devolver Pago
+                                                <button type="submit" class="btn btn-sm btn-outline-warning mb-1" title="Canceló con tiempo suficiente para reembolso">
+                                                    <i class="fa-solid fa-rotate-left me-1"></i> Reembolsar
                                                 </button>
                                             </form>
                                         {% else %}
-                                            <small class="text-success fw-bold"><i class="fa-solid fa-check-double me-1"></i>Pago Devuelto</small>
+                                            <small class="text-success fw-bold"><i class="fa-solid fa-check-double me-1"></i>Reembolsado</small>
                                         {% endif %}
                                     {% else %}
                                         <span>-</span>
@@ -123,7 +125,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">No hay reservas registradas.</td>
+                            <td colspan="8" class="text-center py-4 text-muted">No hay reservas registradas.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

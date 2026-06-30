@@ -19,46 +19,94 @@
                     </h5>
                 </div>
                 <h6 class="mb-3">
-                    Se harán las siguientes reservas:
+                    Se reservarán las siguientes clases:
                 </h6>
-                <table class="table">
+                <table class="table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Espacio</th>
+                            <th class="text-end">Costo</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        {% for clase in clases_a_reservar %}
+                        {% for item in clases_con_estado %}
                         <tr>
                             <td>
                                 <span class="fw-semibold">
-                                    {{ clase.fecha }}
+                                    {{ item.clase_programada.fecha }}
                                 </span>
                             </td>
                             <td>
-                                {{ clase.clase.hora_inicio }}
+                                {{ item.clase_programada.clase.hora_inicio }}
                                 -
-                                {{ clase.clase.hora_fin }}
+                                {{ item.clase_programada.clase.hora_fin }}
                             </td>
                             <td>
-                                {{ clase.clase.get_espacio_display }}
+                                {{ item.clase_programada.clase.get_espacio_display }}
+                            </td>
+                            <td class="text-end">
+                                ${{ item.clase_programada.clase.costo|floatformat:2 }}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td class="text-muted">
-                                No hay ninguna clase para reservar este mes.
+                            <td colspan="4" class="text-muted">
+                                No hay ninguna clase disponible para reservar.
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <!-- form -->
+
+                {% if clases_con_estado %}
+                <div class="border-top pt-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold fs-5">Costo total del turno:</span>
+                        <span class="fw-bold fs-5">${{ costo_total_bruto|floatformat:2 }}</span>
+                    </div>
+                    {% if total_ya_pagado > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-muted">
+                        <span><i class="fa-solid fa-check-circle me-1 text-success"></i>Ya abonado (clases pagas/señadas):</span>
+                        <span>-${{ total_ya_pagado|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if descuento > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-success">
+                        <span><i class="fa-solid fa-tag me-1"></i>Descuento abonado (20%):</span>
+                        <span>-${{ descuento|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+                        <span class="fw-bold fs-4">Total a pagar:</span>
+                        <span class="fw-bold fs-4 text-success">${{ valor_a_pagar|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="alert alert-info d-flex align-items-center mb-4 py-3" role="alert">
+                    <i class="fa-solid fa-circle-info me-3 fs-4"></i>
+                    <div class="small">
+                        <strong>Inscripción Mensual:</strong> Al confirmar, asegurarás tu lugar en este turno. El sistema generará tus reservas automáticamente mes a mes para que no tengas que volver a anotarte.
+                    </div>
+                </div>
+
                 <form method="post">
                     {% csrf_token %}
-                    {{ form.as_p }}
                     <div class="d-flex justify-content-end mt-4">
                         <a href="{% url 'reservas_disponibles' %}" class="btn btn-light border me-2">
                             Cancelar
                         </a>
+                        {% if clases_con_estado %}
                         <button type="submit" class="btn btn-main-cad">
-                            Confirmar Inscripción
+                            Pagar e Inscribirse (${{ valor_a_pagar|floatformat:2 }})
                         </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-main-cad" disabled>
+                            No hay clases disponibles
+                        </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

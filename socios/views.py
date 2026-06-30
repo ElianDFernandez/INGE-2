@@ -32,10 +32,13 @@ def socio_list(request):
 def socio_reservas(request, socio_id):
     # Traigo el historial de reservas de este usuario particular
     socio = get_object_or_404(User, id=socio_id)
-    reservas = Reserva.objects.filter(user=socio).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    reservas = Reserva.objects.filter(user=socio).select_related(
+        'clase_programada__clase__turno__actividad'
+    ).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
-        'reservas': reservas})
+        'reservas': reservas
+    })
 
 # 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
 @login_required
@@ -78,13 +81,29 @@ def registrar_devolucion(request, reserva_id):
         reserva.save()
         
         # Mensaje aclaratorio de que es manual
-        messages.success(request, f"Pago devuelto manualmente a {reserva.user.username}. (La carga automática de créditos se implementará en el próximo sprint).")
+        messages.success(request, f"Reembolso registrado para {reserva.user.username}.")
         
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
 @login_required
-def socio_mis_creditos(request):
-    socio = request.user 
-    return render(request, 'socios/socio_mis_creditos.html', {
-        'socio': socio
+def socio_mis_vales(request):
+    socio = request.user
+    hoy = timezone.localdate()
+    vales_disponibles = socio.vales.filter(
+        usado=False, fecha_vencimiento__gte=hoy
+    ).select_related('actividad').order_by('actividad__nombre', 'fecha_vencimiento')
+
+    vales_usados = socio.vales.filter(usado=True).select_related(
+        'actividad'
+    ).order_by('-fecha_uso')
+
+    vales_vencidos = socio.vales.filter(
+        usado=False, fecha_vencimiento__lt=hoy
+    ).select_related('actividad').order_by('-fecha_vencimiento')
+
+    return render(request, 'socios/socio_mis_vales.html', {
+        'socio': socio,
+        'vales_disponibles': vales_disponibles,
+        'vales_usados': vales_usados,
+        'vales_vencidos': vales_vencidos,
     })

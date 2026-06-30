@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import (reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia,  reservas_disponibles, inscripcion_confirm, inscripcion_cancel, pago_exitoso, pago_fallido, pagar_restante)
+from .views import (reservas_disponibles, reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia, inscripcion_confirm, inscripcion_cancel, inscripcion_pago_exitoso, inscripcion_pago_fallido, pago_exitoso, pago_fallido, pagar_restante, simular_reembolso)
+
 urlpatterns = [
     # Panel de Mis Reservas
     path('', reserva_list, name='reserva_list'),
@@ -26,4 +27,11 @@ urlpatterns = [
     path('reserva/<int:reserva_id>/pago-exitoso/', pago_exitoso, name='pago_exitoso'),
     path('reserva/<int:reserva_id>/pago-fallido/', pago_fallido, name='pago_fallido'),
     path('reserva/<int:reserva_id>/pagar-restante/', pagar_restante, name='pagar_restante'),
+
+    # Pago de Inscripciones
+    path('inscripcion/<int:inscripcion_id>/pago-exitoso/', inscripcion_pago_exitoso, name='inscripcion_pago_exitoso'),
+    path('inscripcion/<int:inscripcion_id>/pago-fallido/', inscripcion_pago_fallido, name='inscripcion_pago_fallido'),
+
+    # Simulación de reembolso
+    path('reembolso/<int:reserva_pk>/', simular_reembolso, name='simular_reembolso'),
 ]
