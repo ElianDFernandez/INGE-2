@@ -317,16 +317,66 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     def get_queryset(self):
         return Turno.objects.filter(activo=True)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva
+        context['en_curso'] = self.object.esta_en_curso_ahora()
+        context['inscripciones_activas'] = Inscripcion.objects.filter(
+            turno=self.object, estado=EstadoInscripcion.ACTIVA
+        ).count()
+        # Reservas de socios que NO están inscriptos (clases individuales)
+        users_inscriptos = Inscripcion.objects.filter(
+            turno=self.object, estado=EstadoInscripcion.ACTIVA
+        ).values_list('user_id', flat=True)
+        context['reservas_individuales'] = Reserva.objects.filter(
+            clase_programada__clase__turno=self.object,
+            estado=EstadoReserva.ACTIVA
+        ).exclude(user_id__in=users_inscriptos).count()
+        return context
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-
-        if self.object.tiene_reservas():
+        # Regla 4: No se puede eliminar un turno en transcurso
+        if self.object.esta_en_curso_ahora():
             messages.error(
                 request,
-                f'No se puede eliminar el turno "{self.object.nombre}" porque tiene reservas activas asociadas.'
+                f'No se puede eliminar el turno "{self.object.nombre}" porque está en transcurso.'
             )
             return redirect(self.success_url)
-        
+
+        # Cancelar inscripciones activas (genera vales para reservas pagas)
+        from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva
+        inscripciones = Inscripcion.objects.filter(turno=self.object, estado=EstadoInscripcion.ACTIVA)
+        cantidad_inscripciones = inscripciones.count()
+        vales_totales = 0
+        for inscripcion in inscripciones:
+            vales_totales += inscripcion.cancelar(por_modificacion_empleado=True)
+
+        # Marcar seña devuelta para socios con clases individuales pagas
+        reservas_individuales_pagas = Reserva.objects.filter(
+            clase_programada__clase__turno=self.object,
+            estado=EstadoReserva.ACTIVA,
+            pago_confirmado=True
+        )
+        cant_devoluciones_individuales = reservas_individuales_pagas.count()
+        reservas_individuales_pagas.update(sena_devuelta=True)
+
+        # Desactivar turno y clases (soft delete)
         self.object.desactivar()
+
+        # Construir mensaje
+        partes = []
+        if cantidad_inscripciones > 0:
+            partes.append(f'{cantidad_inscripciones} inscripci{"ón" if cantidad_inscripciones == 1 else "ones"} cancelada{"s" if cantidad_inscripciones > 1 else ""}')
+        if vales_totales > 0:
+            partes.append(f'{vales_totales} vale{"s" if vales_totales > 1 else ""} de reembolso generado{"s" if vales_totales > 1 else ""}')
+        if cant_devoluciones_individuales > 0:
+            partes.append(f'devolución de seña a {cant_devoluciones_individuales} socio{"s" if cant_devoluciones_individuales > 1 else ""} con clase{"s" if cant_devoluciones_individuales > 1 else ""} individual{"es" if cant_devoluciones_individuales > 1 else ""}')
+
+        if partes:
+            messages.success(request, f'Turno "{self.object.nombre}" eliminado. {", ".join(partes)}.')
+        else:
+            messages.success(request, f'Turno "{self.object.nombre}" eliminado con éxito.')
+
         return redirect(self.success_url)
 
