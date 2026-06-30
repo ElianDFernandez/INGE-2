@@ -2,7 +2,7 @@ from django.db import models
 from datetime import datetime, timedelta
 from django.utils import timezone
 from turnos.models import ClaseProgramada
-
+import uuid
 class EstadoReserva(models.TextChoices):
     INICIADA = 'INICIADA', 'Iniciada (En proceso de pago)'
     ACTIVA = 'ACTIVA', 'Activa (Pagado 100%)'
@@ -14,7 +14,6 @@ class EstadoReserva(models.TextChoices):
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'
     QR = 'QR', 'Código QR'
-
 class MetodoPago(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual (Recepción)'
     VIRTUAL = 'VIRTUAL', 'Virtual (MercadoPago/Transferencia)'
@@ -30,6 +29,18 @@ class Reserva(models.Model):
     pago_confirmado = models.BooleanField(default=False)
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, null=True, blank=True)
     sena_devuelta = models.BooleanField(default=False)
+    qr_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            while True:
+                # antes de guardarlo en la db me fijo si el token colisiona con el de otra reserva para que no rompa por el unique
+                token = uuid.uuid4()
+                if not Reserva.objects.filter(qr_token=token).exists():
+                    self.qr_token = token
+                    break
+
+        super().save(*args, **kwargs)
 
     # Campo para guardar el ID de preferencia de MercadoPago
     mp_preference_id = models.CharField(max_length=255, null=True, blank=True)

@@ -5,15 +5,21 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+<<<<<<< HEAD
 import mercadopago
 from django.conf import settings
+=======
+from django.http import HttpResponse
+
+from io import BytesIO
+import qrcode
+>>>>>>> 8939fcab54478ec7546474f07e985766a0f099bb
 
 from .models import Reserva, EstadoReserva, Inscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
 
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
-
 
 @login_required
 def reservas_disponibles(request):
@@ -264,3 +270,66 @@ def pagar_restante(request, reserva_id):
     preference = preference_response["response"]
     
     return redirect(preference['sandbox_init_point'])
+def reserva_qr(request, reserva_pk):
+    reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+    
+    # por si intento meterme por url
+    if not reserva.clase_programada.puede_pasar_presente:
+        return redirect('reserva_list')
+    
+    return render(request, 'reservas/reserva_qr.html', {'reserva': reserva})
+
+@login_required
+def reserva_qr_image(request, reserva_pk):
+    reserva = get_object_or_404(Reserva, pk=reserva_pk, user=request.user, estado=EstadoReserva.ACTIVA)
+
+    # por si intento meterme por url
+    if not reserva.clase_programada.puede_pasar_presente:
+        return redirect('reserva_list')
+
+    imagen = qrcode.make(str(reserva.qr_token))
+    buffer = BytesIO() # no quiero guardar un archivo fisico, lo guardo en memoria
+    imagen.save(buffer, format="PNG")
+    
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+@staff_member_required
+def escanear_qr(request):
+    return render(request, 'escanear_qr.html')
+
+
+@staff_member_required
+def confirmar_asistencia(request, qr_token):
+    import uuid
+
+    # escaneo cualquier otra cosa que no sea un uuid
+    try:
+        qr_token = uuid.UUID(qr_token)
+    except ValueError:
+        messages.error(request, "El código QR escaneado no es válido.")
+        return redirect("escanear_qr")
+    
+    reserva = Reserva.objects.filter(
+        qr_token=qr_token,
+        estado=EstadoReserva.ACTIVA
+    ).first()
+
+    # si escanee un uuid, pero no esta asociada a una reserva activa en el sistema
+    if reserva is None:
+        messages.error(request, "El código QR escaneado no es válido.")
+        return redirect("escanear_qr")
+
+    # la reserva existe pero ya no se puede pasar asistencia
+    if not reserva.clase_programada.puede_pasar_presente:
+        messages.error(request, "El periodo para pasar la asistencia de esta reserva ya pasó o aún no ha comenzado.")
+        return redirect("escanear_qr")
+
+    if request.method == "POST":
+        reserva.asistio = True
+        reserva.metodo_asistencia = 'QR'
+        reserva.save()
+
+        messages.success(request, f"Asistencia confirmada para {reserva.user.username}.")
+        return redirect("escanear_qr")
+
+    return render(request, "confirmar_asistencia.html", {"reserva": reserva})

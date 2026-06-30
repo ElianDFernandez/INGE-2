@@ -1,0 +1,66 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-body text-center">
+
+            <h2 class="mb-4">Escanear QR de asistencia</h2>
+
+            <div id="reader" class="mx-auto mb-4"></div>
+
+            <a href="{% url 'home' %}" class="btn btn-secondary">
+                Volver
+            </a>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+const html5QrCode = new Html5Qrcode("reader");
+
+async function onScanSuccess(decodedText) {
+    // para que no lea el mismo codigo varias veces seguidas
+    await html5QrCode.stop();
+
+    const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    // si leo algo que no es un uuid mando uno invalido asi el mensaje de error es el mismo
+    if (!uuidRegex.test(decodedText)) {
+        window.location.href = "{% url 'confirmar_asistencia' 'UUID INVALIDO' %}"
+    }
+    else{
+        window.location.href = "{% url 'confirmar_asistencia' 'aux' %}".replace("aux", decodedText);
+    }
+    
+}
+
+html5QrCode.start(
+    { facingMode: "environment" },
+    {
+        fps: 10,
+
+        // tamaño hardcodeado
+        qrbox: 250,
+
+        // para que se ajuste a la pantalla
+        /*
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const lado = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
+            return {
+                width: lado,
+                height: lado
+            };
+        }
+        */
+    },
+    onScanSuccess
+);
+</script>
+{% endblock %}

@@ -25,7 +25,7 @@
                     <thead style="background-color: var(--cad-primary); color: white;">
                         <tr>
                             <th class="ps-4">Fecha</th>
-                            <th>Disciplina</th>
+                            <th>Actividad</th>
                             <th>Horario</th>
                             <th>Estado</th>
                             <th>Asistencia</th>
@@ -96,7 +96,7 @@
                                     
                                 {% else %}
                                     <div class="d-inline-flex">
-                                        {% if not reserva.asistio and reserva.clase_programada.puede_pasar_presente %}
+                                        {% if reserva.estado|lower == 'activa' and not reserva.asistio and reserva.clase_programada.puede_pasar_presente %}
                                             <form action="{% url 'registrar_asistencia' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-success me-1 mb-1" title="Registrar asistencia">

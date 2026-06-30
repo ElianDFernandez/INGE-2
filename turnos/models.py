@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.db import models
 from django.utils import timezone
 from actividades.models import Actividad
@@ -104,15 +104,24 @@ class Clase(models.Model):
 
     def generar_clases_programadas(self):
         from reservas.models import Reserva, EstadoReserva
+
         dias = {
             'LUNES': 0, 'MARTES': 1, 'MIERCOLES': 2, 'JUEVES': 3,
             'VIERNES': 4, 'SABADO': 5, 'DOMINGO': 6,
         }
+
         fecha = timezone.localdate()
         cur_mes = fecha.month
 
+        # me salteo la generacion de hoy si la clase ya hubiese terminado o quedan menos de margen horas para que arranque
+        inicio_hoy = timezone.make_aware(datetime.combine(fecha, self.hora_inicio))
+        margen_horas = 2
+        if timezone.localtime() >= inicio_hoy - timedelta(hours=margen_horas):
+            fecha += timedelta(days=1)
+
         while fecha.weekday() != dias[self.dia]:
             fecha += timedelta(days=1)
+        
         inscripciones_activas = self.turno.inscripcion_set.filter(estado='ACTIVA').select_related('user')
         reservas_a_crear = []
         while (fecha.month==cur_mes):
@@ -215,8 +224,17 @@ class ClaseProgramada(models.Model):
 
     @property
     def puede_pasar_presente(self):
-        return timezone.localdate() == self.fecha
-    
+        from datetime import datetime, timedelta
+        margen = 15
+        
+        ahora = timezone.now()
+        margen_antes = datetime.combine(self.fecha, self.clase.hora_inicio)
+        margen_antes = timezone.make_aware(margen_antes) - timedelta(minutes=margen)
+        margen_despues = datetime.combine(self.fecha, self.clase.hora_inicio)
+        margen_despues = timezone.make_aware(margen_despues) + timedelta(minutes=margen)
+
+        return margen_antes <= ahora and ahora <= margen_despues
+
     class Meta:
         ordering = ['fecha', 'clase__hora_inicio']
         unique_together = ('clase', 'fecha')

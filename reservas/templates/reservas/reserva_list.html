@@ -78,8 +78,15 @@
                                         <i class="fa-solid fa-credit-card me-1"></i> Pagar Restante
                                     </a>
                                     {% endif %}
+<!-- CHEQUEAR MERGE -->
 
-                                    {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo %}
+                                    {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo and reserva.clase_programada.puede_pasar_presente%}
+                                    <a href="{% url 'reserva_qr' reserva.pk %}" class="btn btn-sm btn-outline-primary btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-qrcode me-1"></i> Ver QR
+                                    </a>
+                                    {% endif %}
+
+                                    {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo%}
                                     <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-xmark me-1"></i> Cancelar
                                     </a>
