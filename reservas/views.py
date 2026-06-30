@@ -252,28 +252,98 @@ def reserva_cancel(request, reserva_pk):
 def inscripcion_confirm(request, turno_pk):
     turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
     clases = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate()).exclude(
-        reserva__user = request.user,
-        reserva__estado = EstadoReserva.ACTIVA
+        reserva__user=request.user,
+        reserva__estado=EstadoReserva.ACTIVA
     )
 
-    if request.method == 'POST':
-        form = InscripcionForm(request.POST, user=request.user, turno=turno)
+    inscripcion_temp = Inscripcion(user=request.user, turno=turno)
+    costo_total = float(inscripcion_temp.get_costo())
+    valor_a_pagar = float(inscripcion_temp.get_costo_final())
+    descuento = costo_total - valor_a_pagar
 
-        if form.is_valid():
-            inscripcion = form.save(commit=False)
-            inscripcion.user = request.user
-            inscripcion.turno = turno
-            inscripcion.save()
-            inscripcion.reservar_clases_programadas()
-            messages.success(request, f'¡Genial! Te inscribiste con éxito al turno {turno.nombre} de {turno.actividad.nombre}.')
+    # Costo bruto: todas las clases futuras sin importar estado
+    todas_futuras = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate())
+    costo_total_bruto = sum(float(cp.clase.costo) for cp in todas_futuras)
+
+    # Calcular total ya pagado sobre TODAS las clases futuras (incluye ACTIVA)
+    total_ya_pagado = 0.0
+    for cp in todas_futuras:
+        reserva = Reserva.objects.filter(
+            user=request.user,
+            clase_programada=cp
+        ).exclude(estado=EstadoReserva.CANCELADA).first()
+
+        if reserva and reserva.estado == EstadoReserva.ACTIVA:
+            total_ya_pagado += float(cp.clase.costo)
+        elif reserva and reserva.estado == EstadoReserva.PENDIENTE_PAGO:
+            total_ya_pagado += float(cp.clase.costo) * 0.50
+
+    # Construir lista con estado de pago para mostrar en template
+    clases_con_estado = []
+    for cp in clases:
+        clases_con_estado.append({
+            'clase_programada': cp,
+        })
+
+    if request.method == 'POST':
+        ya_inscripto = Inscripcion.objects.filter(
+            user=request.user, turno=turno, estado__in=['ACTIVA', 'INICIADA']
+        ).exists()
+        if ya_inscripto:
+            messages.warning(request, 'Ya tenés una inscripción activa o en proceso para este turno.')
             return redirect('reservas_disponibles')
-    else:
-        form = InscripcionForm(user=request.user, turno=turno)
+        if valor_a_pagar <= 0:
+            messages.warning(request, 'No hay clases disponibles para inscribirse.')
+            return redirect('reservas_disponibles')
+        inscripcion = Inscripcion.objects.create(
+            user=request.user,
+            turno=turno,
+            estado='INICIADA'
+        )
+
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        url_exito = f"{URL_NGROK}/reservas/inscripcion/{inscripcion.id}/pago-exitoso/"
+        url_fallo = f"{URL_NGROK}/reservas/inscripcion/{inscripcion.id}/pago-fallido/"
+
+        preference_data = {
+            "items": [
+                {
+                    "title": f"Inscripción: {turno.nombre} - {turno.actividad.nombre}",
+                    "quantity": 1,
+                    "unit_price": valor_a_pagar,
+                }
+            ],
+            "back_urls": {
+                "success": url_exito,
+                "failure": url_fallo,
+                "pending": url_fallo
+            },
+            "auto_return": "approved",
+        }
+
+        try:
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            inscripcion.mp_preference_id = preference['id']
+            inscripcion.save()
+
+            return redirect(preference['sandbox_init_point'])
+
+        except Exception as e:
+            print(">>> ERROR EN PYTHON:", e)
+            inscripcion.delete()
+            messages.error(request, 'Error en el pago. No se ha podido establecer la conexión. Intente más tarde.')
+            return redirect('reservas_disponibles')
 
     return render(request, 'inscripciones/inscripcion_confirm.html', {
-        'form': form,
         'turno': turno,
-        'clases_a_reservar': clases
+        'clases_con_estado': clases_con_estado,
+        'costo_total_bruto': costo_total_bruto,
+        'total_ya_pagado': total_ya_pagado,
+        'valor_a_pagar': valor_a_pagar,
+        'descuento': descuento,
     })
 
 @login_required
@@ -304,6 +374,31 @@ def inscripcion_cancel(request, inscripcion_pk):
         'inscripcion': inscripcion,
         'clases_a_cancelar': clases_a_cancelar
     })
+
+@login_required
+def inscripcion_pago_exitoso(request, inscripcion_id):
+    inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id, user=request.user)
+    payment_id = request.GET.get('payment_id')
+
+    if payment_id:
+        inscripcion.mp_payment_id = payment_id
+        inscripcion.estado = 'ACTIVA'
+        inscripcion.save()
+
+        inscripcion.reservar_clases_programadas()
+
+        messages.success(request, f'¡Genial! Te inscribiste con éxito al turno {inscripcion.turno.nombre} de {inscripcion.turno.actividad.nombre}.')
+    else:
+        messages.warning(request, 'Pago recibido pero sin ID de transacción. Contactá soporte.')
+
+    return redirect('reserva_list')
+
+@login_required
+def inscripcion_pago_fallido(request, inscripcion_id):
+    inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id, user=request.user)
+    inscripcion.delete()
+    messages.error(request, 'El pago no pudo procesarse. Tu inscripción ha sido cancelada.')
+    return redirect('reservas_disponibles')
 
 @login_required
 def simular_reembolso(request, reserva_pk):

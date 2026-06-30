@@ -81,6 +81,19 @@ class Socio(User):
         """Verifica si el socio tiene un vale disponible para una actividad."""
         return self.get_vales_disponibles_por_actividad(actividad).exists()
     
+    def get_cancelaciones(self):
+        """Retorna las cancelaciones de inscripciones del mes anterior."""
+        from reservas.models import Inscripcion, EstadoInscripcion
+        hoy = timezone.localdate()
+        primer_dia_mes_anterior = (hoy.replace(day=1) - timezone.timedelta(days=1)).replace(day=1)
+        ultimo_dia_mes_anterior = hoy.replace(day=1) - timezone.timedelta(days=1)
+
+        return Inscripcion.objects.filter(
+            user=self,
+            estado=EstadoInscripcion.DE_BAJA,
+            fecha_baja__date__range=(primer_dia_mes_anterior, ultimo_dia_mes_anterior)
+        ).order_by('-fecha_baja')
+
 class Vale(models.Model):
     socio = models.ForeignKey(Socio, on_delete=models.CASCADE, related_name='vales')
     actividad = models.ForeignKey('actividades.Actividad', on_delete=models.CASCADE, related_name='vales')

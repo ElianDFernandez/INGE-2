@@ -1,4 +1,5 @@
 import calendar
+from decimal import Decimal
 from django.db import models
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -70,6 +71,7 @@ class Reserva(models.Model):
         self.save(update_fields=['sena_devuelta'])
                 
 class EstadoInscripcion(models.TextChoices):
+    INICIADA = 'INICIADA', 'Iniciada (En proceso de pago)'
     ACTIVA = 'ACTIVA', 'Activa'
     DE_BAJA = 'DE_BAJA', 'De Baja'
 
@@ -82,15 +84,36 @@ class Inscripcion(models.Model):
 
     estado = models.CharField(max_length=20, choices=EstadoInscripcion.choices, default=EstadoInscripcion.ACTIVA)
 
+    # MercadoPago
+    mp_preference_id = models.CharField(max_length=255, null=True, blank=True)
+    mp_payment_id = models.CharField(max_length=255, null=True, blank=True)
+
     def reservar_clases_programadas(self):
         clases_programadas = self.turno.get_clases_programadas().filter(
-            fecha__gte = timezone.localdate()
+            fecha__gte=timezone.localdate()
         )
 
-        # si el usuario no tiene ya una reserva activa, le creo una
         for clase_programada in clases_programadas:
-            if (not Reserva.objects.filter(user=self.user, clase_programada=clase_programada, estado=EstadoReserva.ACTIVA).exists()):
-                Reserva.objects.create(user=self.user, clase_programada=clase_programada)
+            # Buscar reserva existente (no cancelada)
+            reserva_existente = Reserva.objects.filter(
+                user=self.user,
+                clase_programada=clase_programada
+            ).exclude(estado=EstadoReserva.CANCELADA).first()
+
+            if reserva_existente:
+                # Ya tiene reserva PENDIENTE_PAGO o ACTIVA → upgradeear a ACTIVA
+                if reserva_existente.estado != EstadoReserva.ACTIVA:
+                    reserva_existente.estado = EstadoReserva.ACTIVA
+                    reserva_existente.pago_confirmado = True
+                    reserva_existente.save()
+            else:
+                # Sin reserva → crear nueva ACTIVA
+                Reserva.objects.create(
+                    user=self.user,
+                    clase_programada=clase_programada,
+                    estado=EstadoReserva.ACTIVA,
+                    pago_confirmado=True
+                )
     
     def generar_vales_devolucion(self, por_modificacion_empleado=False):
         """
@@ -162,6 +185,51 @@ class Inscripcion(models.Model):
             reserva.desactivar(informar=por_modificacion_empleado, motivo='El turno fue modificado' if por_modificacion_empleado else '', por_empleado=por_modificacion_empleado)
 
         return vales_creados
+    
+    def get_costo(self):
+        """
+        Retorna el costo total que el usuario debe pagar por el turno.
+        - Clases sin reserva: costo completo (100%).
+        - Clases con reserva ACTIVA: ya pagó el 100%, no se cuenta.
+        - Clases con reserva PENDIENTE_PAGO: pagó el 50%, se cuenta el 50% restante.
+        """
+        clases_programadas = self.turno.get_clases_programadas().filter(
+            fecha__gte=timezone.localdate()
+        )
+        costo_total = Decimal('0')
+        for cp in clases_programadas:
+            reserva = Reserva.objects.filter(
+                user=self.user,
+                clase_programada=cp
+            ).exclude(estado=EstadoReserva.CANCELADA).first()
+            if reserva is None:
+                # Sin reserva: se paga el costo completo
+                costo_total += cp.clase.costo
+            elif reserva.estado == EstadoReserva.PENDIENTE_PAGO:
+                # Ya pagó la seña (50%), se cobra el restante
+                costo_total += cp.clase.costo * Decimal('0.50')
+            # ACTIVA ya está pagada al 100%, no suma
+        return costo_total
+
+    def get_costo_final(self):
+        """
+        Retorna el costo final del turno, aplicando descuentos si aplica.
+        - 20% de descuento si socio.get_cancelaciones() < 3.
+        """
+        from socios.models import Socio
+        costo_total = self.get_costo()
+        descuento = Decimal('0')
+        try:
+            socio = Socio.objects.get(pk=self.user_id)
+            if socio.get_cancelaciones().count() < 3:
+                descuento = costo_total * Decimal('0.20')
+        except Exception:
+            pass  # Si no tiene socio asociado, no aplica descuento
+        costo_final = costo_total - descuento
+        return costo_final
+
+
+
 
     
 
