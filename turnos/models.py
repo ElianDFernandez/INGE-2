@@ -123,25 +123,32 @@ class Clase(models.Model):
         }
         ahora = timezone.localtime()
         hoy = ahora.date()
-        hora_actual = ahora.time()
-        
-        fecha = hoy
-        cur_mes = fecha.month
 
-        # me salteo la generacion de hoy si la clase ya hubiese terminado o quedan menos de margen horas para que arranque
-        inicio_hoy = timezone.make_aware(datetime.combine(fecha, self.hora_inicio))
-        margen_horas = 2
-        margen_minutos = 15
-        if timezone.localtime() >= inicio_hoy - timedelta(minutes=margen_minutos):
-            fecha += timedelta(days=1)
+        # Primer día del mes anterior
+        if hoy.month == 1:
+            fecha = hoy.replace(year=hoy.year - 1, month=12, day=1)
+        else:
+            fecha = hoy.replace(month=hoy.month - 1, day=1)
 
+        # Primer día del mes siguiente al próximo como límite (genera mes anterior + actual + siguiente)
+        if hoy.month >= 11:
+            fecha_limite = hoy.replace(year=hoy.year + 1, month=(hoy.month + 2) % 12 or 12, day=1)
+        else:
+            fecha_limite = hoy.replace(month=hoy.month + 2, day=1)
+
+        # Buscar la primera ocurrencia del día de la semana
         while fecha.weekday() != dias[self.dia]:
             fecha += timedelta(days=1)
-        if fecha == hoy and hora_actual >= self.hora_inicio:
-            fecha += timedelta(days=7)
+
+        # Saltar la clase de hoy si ya pasó o está por empezar (margen 15 min)
+        if fecha == hoy:
+            inicio_hoy = timezone.make_aware(datetime.combine(hoy, self.hora_inicio))
+            if ahora >= inicio_hoy - timedelta(minutes=15):
+                fecha += timedelta(days=7)
+
         inscripciones_activas = self.turno.inscripcion_set.filter(estado='ACTIVA').select_related('user')
         reservas_a_crear = []
-        while (fecha.month == cur_mes):
+        while fecha < fecha_limite:
             cp, created = ClaseProgramada.objects.get_or_create(clase=self, fecha=fecha)
             if created:
                 for inscripcion in inscripciones_activas:
@@ -155,6 +162,7 @@ class Clase(models.Model):
             fecha += timedelta(days=7)
         if reservas_a_crear:
             Reserva.objects.bulk_create(reservas_a_crear)
+
 
     def tiene_reservas(self):
         from reservas.models import Reserva, EstadoReserva
@@ -266,7 +274,7 @@ class ClaseProgramada(models.Model):
     def puede_reservarse(self):
         from datetime import datetime, timedelta
         inicio = timezone.make_aware(datetime.combine(self.fecha, self.clase.hora_inicio))
-        return timezone.localtime() <= inicio - timedelta(minutes=15)
+        return timezone.localtime() <= inicio - timedelta(minutes=5)
     
     def cancelar(self, informar = False, motivo = ''):
         from reservas.models import EstadoReserva

@@ -35,8 +35,20 @@ def reservas_disponibles(request):
             Prefetch('claseprogramada_set', queryset=ClaseProgramada.objects.filter(fecha__gte=hoy).order_by('fecha'))
         ))
     )
+    turnos_filtrados = []
     for turno in turnos:
         turno.usuario_inscripto = turno.esta_inscripto(request.user)
+        tiene_clase_reservable = False
+        for clase in turno.clase_set.all():
+            for cp in clase.claseprogramada_set.all():
+                if cp.puede_reservarse:
+                    tiene_clase_reservable = True
+                    break
+            if tiene_clase_reservable:
+                break
+        if tiene_clase_reservable:
+            turnos_filtrados.append(turno)
+    turnos = turnos_filtrados
 
     actividades_filtro = Actividad.objects.all().order_by('nombre')
 
@@ -545,7 +557,7 @@ def confirmar_asistencia(request, qr_token):
     
     reserva = Reserva.objects.filter(
         qr_token=qr_token,
-        estado=EstadoReserva.ACTIVA
+        estado=EstadoReserva.ACTIVA, asistio=False
     ).first()
 
     # si escanee un uuid, pero no esta asociada a una reserva activa en el sistema

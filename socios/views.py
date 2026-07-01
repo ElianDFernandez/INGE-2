@@ -34,7 +34,7 @@ def socio_reservas(request, socio_id):
     socio = get_object_or_404(User, id=socio_id)
     reservas = Reserva.objects.filter(user=socio).select_related(
         'clase_programada__clase__turno__actividad'
-    ).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio')
+    ).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
         'reservas': reservas
