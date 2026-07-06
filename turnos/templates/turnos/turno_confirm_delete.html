@@ -26,12 +26,21 @@
                             <strong>Al eliminar este turno se afectará a los siguientes socios:</strong>
                             <ul class="mb-0 mt-2">
                                 {% if inscripciones_activas > 0 %}
-                                    <li>{{ inscripciones_activas }} inscripci{{ inscripciones_activas|pluralize:"ón,ones" }} activa{{ inscripciones_activas|pluralize }} — se cancelarán las inscripciones, reservas y se generarán los reembolsos correspondientes.</li>
+                                    <li>{{ inscripciones_activas }} inscripci{{ inscripciones_activas|pluralize:"ón,ones" }} activa{{ inscripciones_activas|pluralize }} — se cancelarán y se generarán vales para la actividad.</li>
                                 {% endif %}
                                 {% if reservas_individuales > 0 %}
-                                    <li>{{ reservas_individuales }} reserva{{ reservas_individuales|pluralize }} a clase{{ reservas_individuales|pluralize }} individual{{ reservas_individuales|pluralize }} — se cancelarán y se devolverá el monto abonado que corresponda.</li>
+                                    <li>{{ reservas_individuales }} reserva{{ reservas_individuales|pluralize }} a clase{{ reservas_individuales|pluralize }} individual{{ reservas_individuales|pluralize }} — se cancelarán y se devolverá el dinero (100% si pagó todo, 50% si solo dejó seña).</li>
                                 {% endif %}
                             </ul>
+                            <hr class="my-2">
+                            <div class="small">
+                                {% if vales_a_generar > 0 %}
+                                    <div><i class="fa-solid fa-ticket me-1"></i> Vales a generar: <strong>{{ vales_a_generar }}</strong> (valor total: <strong>${{ monto_en_vales }}</strong>)</div>
+                                {% endif %}
+                                {% if monto_devuelto_individuales > 0 %}
+                                    <div><i class="fa-solid fa-money-bill-wave me-1"></i> Devolución reservas individuales: <strong>${{ monto_devuelto_individuales }}</strong></div>
+                                {% endif %}
+                            </div>
                         </div>
                     {% else %}
                         <p class="text-muted small">El turno no tiene inscripciones ni reservas activas. Se eliminarán todas sus clases asociadas.</p>

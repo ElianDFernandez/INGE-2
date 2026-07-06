@@ -95,7 +95,6 @@
                         <tr>
                             <th class="ps-4 py-3">Turno</th>
                             <th class="py-3">Actividad</th>
-                            <th class="py-3 text-center">Inscripciones</th>
                             <th class="pe-4 text-end py-3">Acciones</th>
                         </tr>
                     </thead>
@@ -116,18 +115,8 @@
                             <td>
                                 <span class="badge text-bg-light border text-dark">{{ turno.actividad.nombre }}</span>
                             </td>
-                            <td class="text-center">
-                                {% if turno.inscripciones_activas %}
-                                    <span class="badge bg-success">{{ turno.inscripciones_activas }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">0</span>
-                                {% endif %}
-                            </td>
                             <td class="pe-4 text-end">
                                 {% if user.is_superuser or turno.actividad_id in actividades_asignadas_ids %}
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-calendario-{{ turno.pk }}" title="Ver calendario">
-                                        <i class="fa-solid fa-calendar-days"></i>
-                                    </button>
                                     <a href="{% url 'turno_edit' turno.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar Turno">
                                         <i class="fa-solid fa-pen"></i>
                                     </a>

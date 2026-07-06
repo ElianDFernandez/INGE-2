@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (reservas_disponibles, reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia, inscripcion_confirm, inscripcion_cancel, inscripcion_pago_exitoso, inscripcion_pago_fallido, pago_exitoso, pago_fallido, pagar_restante, simular_reembolso)
+from .views import (reservas_disponibles, reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia, inscripcion_confirm, inscripcion_cancel, inscripcion_pago_exitoso, inscripcion_pago_fallido, pago_exitoso, pago_fallido, pagar_restante, simular_reembolso, simular_reembolso_inscripcion)
 
 urlpatterns = [
     # Panel de Mis Reservas
@@ -34,4 +34,5 @@ urlpatterns = [
 
     # Simulación de reembolso
     path('reembolso/<int:reserva_pk>/', simular_reembolso, name='simular_reembolso'),
+    path('reembolso_inscripcion/<int:inscripcion_pk>/', simular_reembolso_inscripcion, name='simular_reembolso_inscripcion'),
 ]

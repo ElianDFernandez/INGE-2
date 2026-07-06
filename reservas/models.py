@@ -1,4 +1,3 @@
-import calendar
 from decimal import Decimal
 from django.db import models
 from datetime import datetime, timedelta
@@ -126,75 +125,65 @@ class Inscripcion(models.Model):
                     pago_confirmado=True
                 )
     
-    def generar_vales_devolucion(self, por_modificacion_empleado=False):
+    def cancelar(self, por_modificacion_empleado=False):
         """
-        Genera vales para las reservas pagas que se cancelan con al menos 48hs de anticipación.
-        Si la cancelación es por modificación del empleado, se considera que cumple el plazo.
+        Cancela la inscripción y devuelve el 50% del monto de las clases que aún no pasaron.
+        Si fue por modificación de empleado, genera vales en lugar de devolución monetaria.
+        Retorna el monto total devuelto (o el valor equivalente en vales).
         """
-        from socios.models import Vale
-
+        ahora = timezone.now()
         hoy = timezone.localdate()
-        _, ultimo_dia = calendar.monthrange(hoy.year, hoy.month)
-        fecha_vencimiento = hoy.replace(day=ultimo_dia)
 
         clases_programadas = self.turno.get_clases_programadas().filter(
             fecha__gte=hoy
         )
 
-        reservas_pagas = Reserva.objects.filter(
+        reservas_activas = Reserva.objects.filter(
             user=self.user,
             clase_programada__in=clases_programadas,
             estado=EstadoReserva.ACTIVA,
         )
 
-        vales_creados = 0
-        ahora = timezone.now()
+        monto_devuelto = Decimal('0')
+        vales_generados = 0
 
-        for reserva in reservas_pagas:
-            if por_modificacion_empleado:
-                generar = True
-            else:
-                fecha_hora_clase = datetime.combine(
-                    reserva.clase_programada.fecha,
-                    reserva.clase_programada.clase.hora_inicio
-                )
-                fecha_hora_clase = timezone.make_aware(fecha_hora_clase, timezone.get_current_timezone())
-                anticipacion = fecha_hora_clase - ahora
-                generar = anticipacion >= timedelta(hours=48)
+        if por_modificacion_empleado:
+            # Por modificación/eliminación de turno: generar vales por cada clase futura
+            import calendar as cal
+            _, ultimo_dia = cal.monthrange(hoy.year, hoy.month)
+            fecha_vencimiento = hoy.replace(day=ultimo_dia)
 
-            if generar:
+            from socios.models import Vale
+            for cp in clases_programadas:
                 Vale.objects.create(
                     socio_id=self.user_id,
                     actividad=self.turno.actividad,
                     fecha_vencimiento=fecha_vencimiento
                 )
+                vales_generados += 1
+                monto_devuelto += cp.clase.costo
+            # Cancelar todas las reservas activas de estas clases
+            for reserva in reservas_activas:
+                reserva.estado = EstadoReserva.CANCELADA
+                reserva.fecha_cancelacion = ahora
                 reserva.sena_devuelta = True
-                reserva.save(update_fields=['sena_devuelta'])
-                vales_creados += 1
-
-        return vales_creados
-
-    def cancelar(self, por_modificacion_empleado=False):
-        vales_creados = self.generar_vales_devolucion(por_modificacion_empleado=por_modificacion_empleado)
+                reserva.save()
+        else:
+            # Cancelación voluntaria: devolver el 50% de TODAS las clases futuras
+            for cp in clases_programadas:
+                monto_devuelto += cp.clase.costo * Decimal('0.50')
+            # Cancelar todas las reservas activas de estas clases
+            for reserva in reservas_activas:
+                reserva.estado = EstadoReserva.CANCELADA
+                reserva.fecha_cancelacion = ahora
+                reserva.sena_devuelta = True
+                reserva.save()
 
         self.estado = EstadoInscripcion.DE_BAJA
-        self.fecha_baja = timezone.now()
+        self.fecha_baja = ahora
         self.save()
-        
-        clases_programadas = self.turno.get_clases_programadas().filter(
-            fecha__gte=timezone.localdate()
-        )
-        
-        reservas_usuario = Reserva.objects.filter(
-            user=self.user,
-            clase_programada__in=clases_programadas,
-            estado=EstadoReserva.ACTIVA
-        )
-        
-        for reserva in reservas_usuario:
-            reserva.desactivar(informar=por_modificacion_empleado, motivo='El turno fue modificado' if por_modificacion_empleado else '', por_empleado=por_modificacion_empleado)
 
-        return vales_creados
+        return monto_devuelto, vales_generados
     
     def get_costo(self):
         """
@@ -224,14 +213,27 @@ class Inscripcion(models.Model):
     def get_costo_final(self):
         """
         Retorna el costo final del turno, aplicando descuentos si aplica.
-        - 20% de descuento si socio.get_cancelaciones() < 3.
+        - 20% de descuento si el socio no tiene cancelaciones de inscripciones en el mes
+          Y tiene menos de 3 cancelaciones de reservas individuales en el mes.
         """
         from socios.models import Socio
         costo_total = self.get_costo()
         descuento = Decimal('0')
         try:
             socio = Socio.objects.get(pk=self.user_id)
-            if socio.get_cancelaciones().count() < 3:
+            # 1) Cualquier cancelación de inscripción en el mes → pierde descuento
+            if socio.get_cancelaciones().count() > 0:
+                return costo_total
+            # 2) 3 o más cancelaciones de reservas individuales en el mes → pierde descuento
+            hoy = timezone.localdate()
+            primer_dia_mes = hoy.replace(day=1)
+            ultimo_dia_mes = (primer_dia_mes + timezone.timedelta(days=32)).replace(day=1) - timezone.timedelta(days=1)
+            cancelaciones_reservas = Reserva.objects.filter(
+                user=self.user,
+                estado=EstadoReserva.CANCELADA,
+                fecha_cancelacion__date__range=(primer_dia_mes, ultimo_dia_mes)
+            ).count()
+            if cancelaciones_reservas < 3:
                 descuento = costo_total * Decimal('0.20')
         except Exception:
             pass  # Si no tiene socio asociado, no aplica descuento

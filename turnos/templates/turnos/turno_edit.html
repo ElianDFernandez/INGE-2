@@ -34,7 +34,18 @@
                     <div class="alert alert-warning d-flex align-items-center mb-4 py-2 px-3 small" role="alert">
                         <i class="fa-solid fa-triangle-exclamation me-2 fs-5"></i>
                         <div>
-                            <strong>Atención:</strong> Cualquier modificación estructural que realices en el turno o en sus horarios <strong>cancelará automáticamente</strong> todas las inscripciones actuales y reembolsará los créditos correspondientes a los socios.
+                            <strong>Atención:</strong> Cualquier modificación que realices en el turno o en sus horarios <strong>cancelará automáticamente</strong> todas las inscripciones y reservas individuales.
+                            {% if inscripciones_activas > 0 or reservas_individuales > 0 %}
+                                <div class="mt-2 mb-0">
+                                    {% if inscripciones_activas > 0 %}
+                                        <div><i class="fa-solid fa-ticket me-1"></i> Se generarán <strong>{{ vales_a_generar }}</strong> vale{{ vales_a_generar|pluralize }} (valor total: <strong>${{ monto_en_vales|floatformat:2 }}</strong>)
+                                        para {{ inscripciones_activas }} inscripci{{ inscripciones_activas|pluralize:"ón,ones" }} activa{{ inscripciones_activas|pluralize }}.</div>
+                                    {% endif %}
+                                    {% if reservas_individuales > 0 %}
+                                        <div><i class="fa-solid fa-money-bill-wave me-1"></i> Se devolverá <strong>${{ monto_devuelto_individuales|floatformat:2 }}</strong> a {{ reservas_individuales }} socio{{ reservas_individuales|pluralize }} con reserva{{ reservas_individuales|pluralize }} individual{{ reservas_individuales|pluralize }} (100% si pagó todo, 50% si solo dejó seña).</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
