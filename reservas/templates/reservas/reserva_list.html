@@ -39,8 +39,9 @@
                             </tr>
                         </thead>
                         <tbody>
+                            
                             {% for reserva in reservas %}
-                            <tr class="{% if reserva.estado != 'ACTIVA' %}text-muted table-light fila-cancelada{% endif %} align-middle">
+                            <tr class="{% if reserva.estado == 'CANCELADA' or reserva.estado == 'AUSENTE' %}text-muted table-light fila-cancelada{% endif %} align-middle">
                                 <td data-label="Actividad" class="ps-md-4 fw-medium text-dark">
                                     {{ reserva.clase_programada.clase.turno.actividad.nombre }}
                                 </td>
@@ -53,20 +54,51 @@
                                 <td data-label="Espacio">
                                     {{ reserva.clase_programada.clase.get_espacio_display }}
                                 </td>
+                                
                                 <td data-label="Estado">
-                                    <span class="badge {% if reserva.estado == 'ACTIVA' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-dark border">
-                                        {{ reserva.get_estado_display }}
-                                    </span>
+                                    {% if reserva.estado == 'PENDIENTE_PAGO' %}
+                                        <span class="badge bg-warning text-dark border">
+                                            {{ reserva.get_estado_display }}
+                                        </span>
+                                    {% elif reserva.estado == 'ACTIVA' %}
+                                        <span class="badge bg-success bg-opacity-10 text-dark border">
+                                            {{ reserva.get_estado_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-dark border">
+                                            {{ reserva.get_estado_display }}
+                                        </span>
+                                    {% endif %}
                                 </td>
+
                                 <td data-label="Acciones" class="text-md-end pe-md-4">
+                                    
+                                    {% if reserva.estado == 'PENDIENTE_PAGO' %}
+                                    <a href="{% url 'pagar_restante' reserva.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap mb-1 mb-md-0 me-md-1">
+                                        <i class="fa-solid fa-credit-card me-1"></i> Pagar Restante
+                                    </a>
+                                    <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                                    </a>
+                                    {% endif %}
+<!-- CHEQUEAR MERGE -->
+
+                                    {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo and reserva.clase_programada.puede_pasar_presente%}
+                                    <a href="{% url 'reserva_qr' reserva.pk %}" class="btn btn-sm btn-outline-primary btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-qrcode me-1"></i> Ver QR
+                                    </a>
+                                    {% endif %}
+
                                     {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo%}
                                     <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-xmark me-1"></i> Cancelar
                                     </a>
                                     {% endif %}
+                                    
                                 </td>
                             </tr>
                             {% endfor %}
+                    
                         </tbody>
                     </table>
                 </div>

@@ -3,3 +3,4 @@ celery==5.3.6
 redis==5.0.1
 django-celery-beat==2.6.0
 qrcode[pil]==8.2
+mercadopago

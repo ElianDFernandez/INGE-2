@@ -1,0 +1,84 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Devolución procesada{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+        <!-- Header MercadoPago -->
+        <div class="text-center mb-4">
+            <div style="background: #009ee3; border-radius: 8px; padding: 16px 24px; display: inline-block;">
+                <i class="fa-solid fa-wallet" style="font-size: 1.5rem; color: white; margin-right: 8px;"></i>
+                <span style="color: white; font-size: 1.3rem; font-weight: 600; letter-spacing: -0.5px;">MercadoPago</span>
+            </div>
+        </div>
+        <!-- Card principal -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <!-- Check de éxito animado -->
+                <div class="mb-3">
+                    <div style="
+                        width: 72px; height: 72px;
+                        background: #00a650;
+                        border-radius: 50%;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        animation: pop 0.4s ease;
+                    ">
+                        <i class="fa-solid fa-check" style="font-size: 2rem; color: white;"></i>
+                    </div>
+                </div>
+                <h5 style="color: #333; font-weight: 600;">¡Devolución procesada!</h5>
+                {% if reserva.pago_confirmado %}
+                    <p class="text-muted mb-1">El pago total de la clase fue devuelto a tu cuenta.</p>
+                {% else %}
+                    <p class="text-muted mb-1">La seña abonada fue devuelta a tu cuenta.</p>
+                {% endif %}
+                <p class="text-muted small mb-4">El reintegro se verá reflejado en tu cuenta de MercadoPago.</p>
+                <!-- Detalle de la reserva -->
+                <div class="text-start p-3 mb-3" style="background: #f5f5f5; border-radius: 8px;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Actividad</span>
+                        <span class="fw-semibold small">{{ reserva.clase_programada.clase.turno.actividad.nombre }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Fecha</span>
+                        <span class="small">{{ reserva.clase_programada.fecha }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Horario</span>
+                        <span class="small">{{ reserva.clase_programada.clase.hora_inicio }} - {{ reserva.clase_programada.clase.hora_fin }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Referencia</span>
+                        <span class="small text-muted">#{{ reserva.pk }}-SIM</span>
+                    </div>
+                </div>
+                <!-- Monto -->
+                <div class="mb-4">
+                    <small class="text-muted">Monto devuelto</small>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #00a650;">
+                        ${{ monto_devuelto }}
+                    </div>
+                    {% if not reserva.pago_confirmado %}
+                        <small class="text-muted">Seña (50% del costo de la clase)</small>
+                    {% endif %}
+                </div>
+                <!-- Botón volver -->
+                <a href="{% url 'reserva_list' %}" class="btn w-100" style="background: #009ee3; color: white; font-weight: 600; border-radius: 6px; padding: 10px;">
+                    Volver a mis reservas
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pop {
+        0% { transform: scale(0); }
+        70% { transform: scale(1.15); }
+        100% { transform: scale(1); }
+    }
+</style>
+{% endblock %}

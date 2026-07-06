@@ -76,5 +76,20 @@ docker compose exec web python manage.py --help
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
-```
+
 Luego, Ctrl + Shift + P -> Python: Select Interpreter -> venv\Scripts\python.exe
+
+```
+**Cómo probar Mercado Pago en entorno local (Para el equipo):**
+```
+ 1- Descargar el ejecutable de Ngrok desde ngrok.com (no se instala por requirements).
+
+ 2- Autenticar la cuenta corriendo en la terminal: ngrok config add-authtoken [TOKEN_DEL_EQUIPO]
+
+ 3- Levantar el túnel apuntando al puerto de Docker: ngrok http 8000
+
+ 4- Copiar la URL https://...ngrok-free.app que devuelve la terminal.
+
+ 5- En el archivo reservas/views.py, pegar esa URL en la variable url_ngrok para que Mercado Pago permita el retorno automático hacia nuestro entorno local.
+ 
+```

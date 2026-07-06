@@ -24,7 +24,7 @@
         <ul class="nav nav-tabs nav-fill flex-nowrap mx-3 mx-md-0 mb-4" id="reservasTabs" role="tablist" style="overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-bold px-3 px-md-4" id="turnos-tab" data-bs-toggle="tab" data-bs-target="#turnos-tab-pane" type="button" role="tab" aria-controls="turnos-tab-pane" aria-selected="true" style="color: var(--cad-primary);">
-                    Turnos Disponibles
+                    Turnos
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -119,7 +119,7 @@
                     {% empty %}
                     <div class="card shadow-sm border-0 mx-2 mx-md-0 mb-4 mensaje-vacio-turnos">
                         <div class="card-body text-center py-4 text-muted">
-                            No hay turnos disponibles actualmente.
+                            No hay turnos para mostrar.
                         </div>
                     </div>
                     {% endfor %}
@@ -168,7 +168,7 @@
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-bookmark me-1"></i> {{ clase_programada.clase.turno.nombre }}</div>
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-location-dot me-1"></i> {{ clase_programada.clase.get_espacio_display }}</div>
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-tag me-1"></i> ${{ clase_programada.clase.costo }}</div>
-                                                        <div class="text-break"><i class="fa-solid fa-users me-1"></i> Cupo: {{ clase_programada.cupo_actual }}/{{ clase_programada.clase.cupo_maximo }}</div>
+                                                        <div class="text-break"><i class="fa-solid fa-users me-1"></i> Cupo: {{ clase_programada.cupo_ocupado }}/{{ clase_programada.clase.cupo_maximo }}</div>
                                                     </div>
                                                 </div>
                                                 <div class="mt-auto pt-2 border-top">
@@ -187,12 +187,7 @@
                                                             </button>
                                                         </form>
 
-                                                     {% elif clase_programada.id in clases_canceladas_lista_espera_ids %}
-
-                                                        <button type="button" class="btn btn-secondary w-100 disabled py-2 mt-2" disabled>
-                                                            <i class="fa-solid fa-ban me-1"></i> Te diste de baja de lista de espera
-                                                        </button>
-
+                                                
                                                     {% elif clase_programada.cupo_real <= 0 %}
 
                                                         <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">

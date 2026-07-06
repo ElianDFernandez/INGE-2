@@ -192,6 +192,11 @@
                             <a class="nav-link" href="{% url 'empleados_list' %}">Empleados</a>
                         </li>
                         {% endif %}
+                        {% if user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'escanear_qr' %}">Escanear QR</a>
+                        </li>
+                        {% endif %}
                         {% if not user.is_staff and not user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'reserva_list' %}">Mis Reservas</a>
@@ -200,7 +205,7 @@
                             <a class="nav-link" href="{% url 'reservas_disponibles' %}">Reservas Disponibles</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'socio_mis_creditos' %}">Mis Créditos</a>
+                            <a class="nav-link" href="{% url 'socio_mis_vales' %}">Mis Vales</a>
                         </li>
                         {% endif %}
                     {% endif %}
