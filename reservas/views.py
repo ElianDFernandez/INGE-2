@@ -31,6 +31,7 @@ def reservas_disponibles(request):
     #Clases de lista de espera (filtrado por estados)
     clases_en_lista_espera_cancelados = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.CANCELADO).values_list('clase_programada_id', flat=True)
     clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.PENDIENTE).values_list('clase_programada_id', flat=True)
+    
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
     clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
 
@@ -77,6 +78,21 @@ def reservas_disponibles(request):
         ocupadas = reservas_ocupadas + notificados
         clase.cupo_ocupado = ocupadas
         clase.cupo_real = clase.clase.cupo_maximo - ocupadas
+        
+        #calcula posicion en lista de espera
+        entrada_lista = ListaEspera.objects.filter(
+        clase_programada=clase,
+        user=request.user,
+        estado=EstadoListaEspera.PENDIENTE).first()
+    
+        if entrada_lista:
+            clase.posicion_lista = ListaEspera.objects.filter(
+                clase_programada=clase,
+                estado=EstadoListaEspera.PENDIENTE,
+                fecha_anotacion__lt=entrada_lista.fecha_anotacion).count() + 1
+        else:
+            clase.posicion_lista = None
+        
 
     return render(request, 'reservas_disponibles.html', {
         'clases_programadas': clases_programadas,
