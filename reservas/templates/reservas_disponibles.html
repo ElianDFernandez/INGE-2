@@ -183,7 +183,7 @@
                                                         <form method="post" action="{% url 'cancelar_lista_espera' clase_programada.pk %}">
                                                             {% csrf_token %}
                                                             <button type="submit" class="btn btn-outline-secondary w-100 py-2 mt-2">
-                                                                <i class="fa-solid fa-xmark me-1"></i>Posición #{{ clase_programada.posicion_lista }} - Darse de baja de lista
+                                                                <i class="fa-solid fa-xmark me-1"></i>Posición #{{ clase_programada.posicion_lista }} - Darse de baja de lista de espera
                                                             </button>
                                                         </form>
 

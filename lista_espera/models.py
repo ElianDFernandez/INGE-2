@@ -56,3 +56,9 @@ class ListaEspera(models.Model):
         deadline = fecha_notificacion + timedelta(hours=2)
         return max(deadline - timezone.now(), timedelta(seconds=0))
     
+    def get_posicion(self):
+        return ListaEspera.objects.filter(
+            clase_programada=self.clase_programada,
+            estado=EstadoListaEspera.PENDIENTE,
+            fecha_anotacion__lt=self.fecha_anotacion
+        ).count() + 1

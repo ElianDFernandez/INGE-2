@@ -37,9 +37,10 @@ def notificar_siguiente(clase_programada_id):
     siguiente.save()
     
     # Envía email
+    url_ngrok='https://handstand-aghast-left.ngrok-free.dev'
     subject = f'¡Cupo disponible en {clase_programada.clase.turno.actividad.nombre}!'
-    notificacion_url = f"{settings.SITE_URL.rstrip('/')}" + reverse('confirmar_desde_email', args=[siguiente.id])
-
+    notificacion_url = f"{url_ngrok.rstrip('/')}" + reverse('confirmar_desde_email', args=[siguiente.id])
+    
     html_message = render_to_string('mensaje_confirmacion.html', {
         'titulo': '¡Confirmá o cancelá tu reserva!',
         'usuario': siguiente.user,
@@ -49,7 +50,7 @@ def notificar_siguiente(clase_programada_id):
         'hora_inicio': clase_programada.clase.hora_inicio,
         'hora_fin': clase_programada.clase.hora_fin,
         'notificacion_url': notificacion_url,
-        'sitio_url': settings.SITE_URL,
+        'sitio_url': url_ngrok,
     })
 
     text_message = strip_tags(html_message)

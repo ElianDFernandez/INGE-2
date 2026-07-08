@@ -171,6 +171,79 @@
             </div>
         </div>
     </div>
+    
+    <div class="card shadow-sm border-0 mb-4 mx-2 mx-md-0">
+    <div class="card-body">
+        <button class="btn p-0 border-0 bg-transparent text-start w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-lista-espera" aria-expanded="true">
+            <i class="fa-solid fa-chevron-down me-2"></i>
+            <span class="fw-bold fs-5 fs-md-4">
+                En lista de Espera
+            </span>
+        </button>
+    </div>
+    <div class="collapse show" id="collapse-lista-espera">
+        <div class="card-body pt-0 px-2 px-md-3">
+            {% if lista_espera_inscripciones %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 tabla-responsive-cards">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-md-4">Actividad</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Posición</th>
+                            <th>Estado</th>
+                            <th class="text-md-end pe-md-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entrada in lista_espera_inscripciones %}
+                        <tr class="align-middle">
+                            <td data-label="Actividad" class="ps-md-4 fw-medium text-dark">
+                                {{ entrada.clase_programada.clase.turno.actividad.nombre }}
+                            </td>
+                            <td data-label="Fecha">
+                                {{ entrada.clase_programada.fecha }}
+                            </td>
+                            <td data-label="Horario">
+                                {{ entrada.clase_programada.clase.hora_inicio }} - {{ entrada.clase_programada.clase.hora_fin }}
+                            </td>
+                            <td data-label="Posición">
+                                #{{ entrada.get_posicion }}
+                            </td>
+                            <td data-label="Estado">
+                                <span class="badge {% if entrada.estado == 'pendiente' %}bg-warning{% else %}bg-info{% endif %} bg-opacity-10 text-dark border">
+                                    {{ entrada.get_estado_display }}
+                                </span>
+                            </td>
+                            <td data-label="Acciones" class="text-md-end pe-md-4">
+                                {% if entrada.estado == 'pendiente' %}
+                                <form method="post" action="{% url 'cancelar_lista_espera' entrada.clase_programada.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-xmark me-1"></i> Darse de baja de lista de espera
+                                    </button>
+                                </form>
+                                {% elif entrada.estado == 'notificado' %}
+                                <a href="{% url 'confirmar_desde_email' entrada.pk %}" class="btn btn-sm btn-outline-success btn-accion-movil text-nowrap">
+                                    <i class="fa-solid fa-check me-1"></i> Confirmar
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                No estás en ninguna lista de espera.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 </div>
 
 <style>

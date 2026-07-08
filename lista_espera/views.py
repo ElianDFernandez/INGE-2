@@ -26,19 +26,21 @@ def inscribirse_lista_espera(request, clase_programada_pk):
                 messages.warning(request, 'Ya estás en la lista de espera.')
             elif entrada_existente.estado in (EstadoListaEspera.CANCELADO, EstadoListaEspera.EXPIRADO):
                 entrada_existente.delete()
-                ListaEspera.objects.create(
+                nueva_entrada=ListaEspera.objects.create(
                     user=request.user,
                     clase_programada=clase_programada,
                 )
-                messages.success(request, 'Te anotaste en la lista de espera.')
+                posicion=nueva_entrada.get_posicion()
+                messages.success(request, f'Te anotaste en la lista de espera.Tu posicion en espera es: #{posicion} ')
             else:
                 messages.warning(request, 'Ya tenés una inscripción activa en la lista de espera.')
         else:
-            ListaEspera.objects.create(
+            nueva_entrada = ListaEspera.objects.create(
                 user=request.user,
                 clase_programada=clase_programada,
             )
-            messages.success(request, 'Te anotaste en la lista de espera.')
+            posicion = nueva_entrada.get_posicion()
+            messages.success(request, f'Te anotaste en la lista de espera. Tu posición en espera es: #{posicion}')
 
         return redirect('reservas_disponibles')
 
@@ -93,6 +95,10 @@ def confirmar_desde_email(request, lista_espera_id):
     if entrada.estado != EstadoListaEspera.NOTIFICADO:
         messages.error(request, 'Este enlace ya no es válido.')
         return redirect('reservas_disponibles')
+    
+    actividad = entrada.clase_programada.clase.turno.actividad
+    vales_disponibles = request.user.vales.filter(actividad=actividad,usado=False,fecha_vencimiento__gte=timezone.localdate())
+    
     #Flujo normal,validaciones de pago y uso de vales 
     if request.method == 'POST':
         accion = request.POST.get('accion')
@@ -107,11 +113,6 @@ def confirmar_desde_email(request, lista_espera_id):
                 return redirect('reservas_disponibles')
 
             actividad = entrada.clase_programada.clase.turno.actividad
-            vales_disponibles = request.user.vales.filter(
-                actividad=actividad,
-                usado=False,
-                fecha_vencimiento__gte=timezone.localdate()
-            )
             tiene_vales = vales_disponibles.exists()
             usar_vale = 'usar_vale' in request.POST and tiene_vales
 
@@ -191,6 +192,8 @@ def confirmar_desde_email(request, lista_espera_id):
     return render(request, 'notificacion_email.html', {
         'entrada': entrada,
         'clase_programada': entrada.clase_programada,
+        'tiene_vales' : vales_disponibles.exists(),
+        'vales' : vales_disponibles
     })
 
 

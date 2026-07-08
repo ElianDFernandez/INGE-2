@@ -30,7 +30,7 @@ def reservas_disponibles(request):
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
     #Clases de lista de espera (filtrado por estados)
     clases_en_lista_espera_cancelados = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.CANCELADO).values_list('clase_programada_id', flat=True)
-    clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.PENDIENTE).values_list('clase_programada_id', flat=True)
+    clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).values_list('clase_programada_id', flat=True)
     
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
     clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
@@ -83,13 +83,10 @@ def reservas_disponibles(request):
         entrada_lista = ListaEspera.objects.filter(
         clase_programada=clase,
         user=request.user,
-        estado=EstadoListaEspera.PENDIENTE).first()
-    
+        estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).first()
+
         if entrada_lista:
-            clase.posicion_lista = ListaEspera.objects.filter(
-                clase_programada=clase,
-                estado=EstadoListaEspera.PENDIENTE,
-                fecha_anotacion__lt=entrada_lista.fecha_anotacion).count() + 1
+            clase.posicion_lista = entrada_lista.get_posicion()
         else:
             clase.posicion_lista = None
         
@@ -253,12 +250,16 @@ def pago_fallido(request, reserva_id):
 
 @login_required
 def reserva_list(request):
+
     hoy = timezone.localdate()
     reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
     inscripciones = Inscripcion.objects.filter(user=request.user)
+    lista_espera_inscripciones = ListaEspera.objects.filter(user=request.user,estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).select_related('clase_programada__clase__turno__actividad').order_by('fecha_anotacion')
+
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
-        'inscripciones': inscripciones
+        'inscripciones': inscripciones,
+        'lista_espera_inscripciones': lista_espera_inscripciones,
     })
 
 @login_required
