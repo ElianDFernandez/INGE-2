@@ -6,12 +6,12 @@ from django.utils import timezone
 from turnos.models import ClaseProgramada
 import uuid
 class EstadoReserva(models.TextChoices):
-    INICIADA = 'INICIADA', 'Iniciada (En proceso de pago)'
-    ACTIVA = 'ACTIVA', 'Activa (Pagado 100%)'
+    INICIADA = 'INICIADA', 'Iniciada'
+    ACTIVA = 'ACTIVA', 'Activa'
     CANCELADA = 'CANCELADA', 'Cancelada'
     PRESENTE = 'PRESENTE', 'Presente'
     AUSENTE = 'AUSENTE', 'Ausente'
-    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Pendiente de Pago (Señada)'
+    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Señada'
 
 class MetodoAsistencia(models.TextChoices):
     MANUAL = 'MANUAL', 'Manual'

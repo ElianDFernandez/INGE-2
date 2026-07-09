@@ -19,7 +19,7 @@ from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, Inscri
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
 
-URL_NGROK = "https://headpiece-public-unclog.ngrok-free.dev"
+URL_NGROK = "https://scalding-secluding-headwear.ngrok-free.dev"
 
 @login_required
 def reservas_disponibles(request):
@@ -28,6 +28,15 @@ def reservas_disponibles(request):
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
     clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
     clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
+
+    clases_reservadas_user = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO])
+    clases_superpuestas_ids = []
+    for clase in clases_programadas:
+        for reserva in clases_reservadas_user:
+            if clase.se_superponen(reserva.clase_programada):
+                clases_superpuestas_ids.append(clase.id)
+                break
+    
 
     # TURNOS
     turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
@@ -41,7 +50,7 @@ def reservas_disponibles(request):
         tiene_clase_reservable = False
         for clase in turno.clase_set.all():
             for cp in clase.claseprogramada_set.all():
-                if cp.puede_reservarse:
+                if cp.puede_reservarse and cp.id not in clases_reservadas_ids and cp.id not in clases_superpuestas_ids:
                     tiene_clase_reservable = True
                     break
             if tiene_clase_reservable:
@@ -60,6 +69,7 @@ def reservas_disponibles(request):
     return render(request, 'reservas_disponibles.html', {
         'clases_programadas': clases_programadas,
         'clases_reservadas_ids': list(clases_reservadas_ids),
+        'clases_superpuestas_ids': list(clases_superpuestas_ids),
         'turnos': turnos,
         'inscripciones_ids': list(inscripciones_ids),
         'actividades_filtro': actividades_filtro

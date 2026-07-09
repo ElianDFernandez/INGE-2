@@ -180,6 +180,10 @@
                                                         <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
                                                             <i class="fa-solid fa-ban me-1"></i> Sin cupos
                                                         </button>
+                                                    {% elif clase_programada.id in clases_superpuestas_ids %}
+                                                        <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
+                                                            <i class="fa-solid fa-exclamation me-1"></i> Ya tenés una reserva en ese horario
+                                                        </button>
                                                     {% else %}
                                                         <a href="{% url 'reserva_confirm' clase_programada.pk %}" class="btn btn-main-cad w-100 py-2 mt-2">
                                                             <i class="fa-solid fa-plus me-1"></i> Reservar

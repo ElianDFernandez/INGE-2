@@ -281,3 +281,8 @@ class ClaseProgramada(models.Model):
         reservas_activas = self.reserva_set.filter(estado=EstadoReserva.ACTIVA)
         for reserva in reservas_activas:
             reserva.desactivar(informar, motivo)
+
+    def se_superponen(self, otraClase):
+        if self.fecha != otraClase.fecha:
+            return False
+        return not (self.clase.hora_fin <= otraClase.clase.hora_inicio or self.clase.hora_inicio >= otraClase.clase.hora_fin)

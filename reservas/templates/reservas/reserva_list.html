@@ -35,6 +35,7 @@
                                 <th>Horario</th>
                                 <th>Espacio</th>
                                 <th>Estado</th>
+                                <th>Asistencia</th>
                                 <th class="text-md-end pe-md-4">Acciones</th>
                             </tr>
                         </thead>
@@ -70,15 +71,26 @@
                                         </span>
                                     {% endif %}
                                 </td>
-
+                                <td data-label="Asistencia" class="text-md-center pe-md-4">
+                                    {% if reserva.asistencia %}
+                                        <span class="badge bg-success bg-opacity-10 text-dark border">
+                                            Presente
+                                        </span>
+                                    {% elif not reserva.clase_programada.ya_finalizo or reserva.estado == 'CANCELADA' %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-dark border">
+                                            -
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-dark border">
+                                            Ausente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                
                                 <td data-label="Acciones" class="text-md-end pe-md-4">
-                                    
-                                    {% if reserva.estado == 'PENDIENTE_PAGO' %}
+                                    {% if reserva.estado == 'PENDIENTE_PAGO' and not reserva.clase_programada.ya_finalizo %}
                                     <a href="{% url 'pagar_restante' reserva.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap mb-1 mb-md-0 me-md-1">
                                         <i class="fa-solid fa-credit-card me-1"></i> Pagar Restante
-                                    </a>
-                                    <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
-                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
                                     </a>
                                     {% endif %}
 <!-- CHEQUEAR MERGE -->
@@ -89,7 +101,7 @@
                                     </a>
                                     {% endif %}
 
-                                    {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo%}
+                                    {% if reserva.estado == 'ACTIVA' and not reserva.asistencia and not reserva.clase_programada.ya_finalizo%}
                                     <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-xmark me-1"></i> Cancelar
                                     </a>
