@@ -26,10 +26,10 @@ def reservas_disponibles(request):
     hoy = timezone.localdate()
     # CLASES INDIVIDUALES
     clases_programadas = ClaseProgramada.objects.filter(fecha__gte=hoy, clase__activo=True, clase__turno__activo=True).select_related('clase', 'clase__turno', 'clase__turno__actividad').order_by('fecha', 'clase__hora_inicio')
-    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
+    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO], clase_programada__fecha__gte=hoy).values_list('clase_programada_id', flat=True)
     clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
 
-    clases_reservadas_user = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO])
+    clases_reservadas_user = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO], clase_programada__fecha__gte=hoy)
     clases_superpuestas_ids = []
     for clase in clases_programadas:
         for reserva in clases_reservadas_user:
@@ -48,9 +48,9 @@ def reservas_disponibles(request):
     for turno in turnos:
         turno.usuario_inscripto = turno.esta_inscripto(request.user)
         tiene_clase_reservable = False
-        for clase in turno.clase_set.all():
+        for clase in turno.clase_set.filter(activo=True):
             for cp in clase.claseprogramada_set.all():
-                if cp.puede_reservarse and cp.id not in clases_reservadas_ids and cp.id not in clases_superpuestas_ids:
+                if cp.puede_reservarse and cp.id not in clases_superpuestas_ids:
                     tiene_clase_reservable = True
                     break
             if tiene_clase_reservable:
@@ -58,6 +58,23 @@ def reservas_disponibles(request):
         if tiene_clase_reservable:
             turnos_filtrados.append(turno)
     turnos = turnos_filtrados
+
+    turnos_superpuestos_id = []
+    turnos_inscriptos = Inscripcion.objects.filter(user=request.user, estado='ACTIVA')
+    for turno in turnos:
+        for inscripcion in turnos_inscriptos:
+            if turno.se_superponen(inscripcion.turno):
+                turnos_superpuestos_id.append(turno.id)
+                break
+
+    for turno in turnos:
+        for clase in turno.clase_set.filter(activo=True):
+            for reserva in clases_reservadas_user:
+                if reserva.clase_programada.clase.turno_id == turno.id:
+                    continue
+                if clase.se_superponen(reserva.clase_programada.clase):
+                    turnos_superpuestos_id.append(turno.id)
+                    break            
 
     actividades_filtro = Actividad.objects.all().order_by('nombre')
 
@@ -71,6 +88,7 @@ def reservas_disponibles(request):
         'clases_reservadas_ids': list(clases_reservadas_ids),
         'clases_superpuestas_ids': list(clases_superpuestas_ids),
         'turnos': turnos,
+        'turnos_superpuestos_id': list(turnos_superpuestos_id),
         'inscripciones_ids': list(inscripciones_ids),
         'actividades_filtro': actividades_filtro
     })

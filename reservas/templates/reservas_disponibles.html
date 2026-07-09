@@ -106,6 +106,10 @@
                                         <button type="button" class="btn btn-outline-danger disabled" style="min-width: 150px;" tabindex="-1" aria-disabled="true">
                                             <i class="fa-solid fa-ban me-1"></i> Sin cupos
                                         </button>
+                                    {% elif turno.id in turnos_superpuestos_id %}
+                                        <button type="button" class="btn btn-outline-danger disabled" style="min-width: 150px;" tabindex="-1" aria-disabled="true">
+                                            <i class="fa-solid fa-exclamation me-1"></i> Se superpone con una reserva activa
+                                        </button>
                                     {% else %}
                                         <a href="{% url 'inscripcion_confirm' turno.pk %}" class="btn btn-main-cad" style="min-width: 150px;">
                                             <i class="fa-solid fa-plus me-1"></i> Inscribirse al Turno

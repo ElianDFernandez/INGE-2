@@ -103,6 +103,16 @@ class Turno(models.Model):
             hora_fin__gte=ahora
         ).exists()
 
+    def se_superponen(self, otroTurno):
+        clases_self = list(self.clase_set.filter(activo=True))
+        clases_otro = list(otroTurno.clase_set.filter(activo=True))
+
+        for clase1 in clases_self:
+            for clase2 in clases_otro:
+                if clase1.se_superponen(clase2):
+                    return True
+        return False
+
 class Clase(models.Model):
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE)
     dia = models.CharField(max_length=10, choices=DiaSemana.choices)
@@ -228,6 +238,11 @@ class Clase(models.Model):
             reserva.desactivar(informar, motivo)
             reserva.devolver_pago()
 
+    def se_superponen(self, otraClase):
+        if self.dia != otraClase.dia:
+            return False
+        return not (self.hora_fin <= otraClase.hora_inicio or self.hora_inicio >= otraClase.hora_fin)
+
 class ClaseProgramada(models.Model):
     clase = models.ForeignKey(Clase, on_delete=models.CASCADE)
     fecha = models.DateField()
@@ -283,6 +298,4 @@ class ClaseProgramada(models.Model):
             reserva.desactivar(informar, motivo)
 
     def se_superponen(self, otraClase):
-        if self.fecha != otraClase.fecha:
-            return False
-        return not (self.clase.hora_fin <= otraClase.clase.hora_inicio or self.clase.hora_inicio >= otraClase.clase.hora_fin)
+        return(self.fecha == otraClase.fecha and self.clase.se_superponen(otraClase.clase))
