@@ -172,27 +172,45 @@
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-bookmark me-1"></i> {{ clase_programada.clase.turno.nombre }}</div>
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-location-dot me-1"></i> {{ clase_programada.clase.get_espacio_display }}</div>
                                                         <div class="mb-1 text-break"><i class="fa-solid fa-tag me-1"></i> ${{ clase_programada.clase.costo }}</div>
-                                                        <div class="text-break"><i class="fa-solid fa-users me-1"></i> Cupo: {{ clase_programada.cupo_actual }}/{{ clase_programada.clase.cupo_maximo }}</div>
+                                                        <div class="text-break"><i class="fa-solid fa-users me-1"></i> Cupo: {{ clase_programada.cupo_ocupado }}/{{ clase_programada.clase.cupo_maximo }}</div>
                                                     </div>
                                                 </div>
                                                 <div class="mt-auto pt-2 border-top">
                                                     {% if clase_programada.id in clases_reservadas_ids %}
-                                                        <button type="button" class="btn btn-secondary w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
+                                                    
+                                                        <button type="button" class="btn btn-success w-100 disabled py-2 mt-2" disabled>
                                                             <i class="fa-solid fa-check me-1"></i> Reservado
                                                         </button>
-                                                    {% elif clase_programada.cupo_actual >= clase_programada.clase.cupo_maximo %}
-                                                        <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
-                                                            <i class="fa-solid fa-ban me-1"></i> Sin cupos
-                                                        </button>
+
+                                                    {% elif clase_programada.id in clases_en_lista_espera_ids %}
+
+                                                        <form method="post" action="{% url 'cancelar_lista_espera' clase_programada.pk %}">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-outline-secondary w-100 py-2 mt-2">
+                                                                <i class="fa-solid fa-xmark me-1"></i>Posición #{{ clase_programada.posicion_lista }} - Dar de baja
+                                                            </button>
+                                                        </form>
+                                                
                                                     {% elif clase_programada.id in clases_superpuestas_ids %}
                                                         <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
                                                             <i class="fa-solid fa-exclamation me-1"></i> Ya tenés una reserva en ese horario
                                                         </button>
+                                                    {% elif clase_programada.cupo_real <= 0 %}
+
+                                                        <button type="button" class="btn btn-outline-danger w-100 disabled py-2 mt-2" tabindex="-1" aria-disabled="true">
+                                                            <i class="fa-solid fa-ban me-1"></i> Sin cupos
+                                                        </button>
+                                
+                                                        <a href="{% url 'inscribirse_lista_espera' clase_programada.pk %}" class="btn btn-outline-primary w-100 py-2 mt-2">
+                                                            <i class="fa-solid fa-clock me-1"></i> Anotarme en lista de espera
+                                                        </a>       
+
                                                     {% else %}
                                                         <a href="{% url 'reserva_confirm' clase_programada.pk %}" class="btn btn-main-cad w-100 py-2 mt-2">
                                                             <i class="fa-solid fa-plus me-1"></i> Reservar
                                                         </a>
                                                     {% endif %}
+                                                    
                                                 </div>
                                             </div>
                                         </div>

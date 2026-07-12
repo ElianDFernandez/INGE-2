@@ -379,6 +379,13 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
         )
         cant_devoluciones_individuales = reservas_individuales_pagas.count()
         reservas_individuales_pagas.update(sena_devuelta=True)
+        
+        #Cancelo las anotaciones en lista de espera de la clase
+        from lista_espera.models import ListaEspera, EstadoListaEspera
+        ListaEspera.objects.filter(
+        clase_programada__clase__turno=self.object,
+        estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]
+        ).update(estado=EstadoListaEspera.CANCELADO)
 
         # Desactivar turno y clases (soft delete)
         self.object.desactivar()

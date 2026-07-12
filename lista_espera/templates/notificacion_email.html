@@ -1,0 +1,59 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 700px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h3 class="mb-3">Notificacion de cupo disponible</h3>
+
+            <div class="alert alert-info" role="alert">
+                <strong>{{ clase_programada.clase.turno.actividad.nombre }}</strong>
+                <br>
+                {{ clase_programada.dia }} {{ clase_programada.fecha }}
+                de {{ clase_programada.clase.hora_inicio }} a {{ clase_programada.clase.hora_fin }}
+            </div>
+
+            <p>Se liberó un lugar para la clase en la que estabas en lista de espera.</p>
+            <p>Por favor, elegí una de estas opciones. Para confirmar tu lugar deberás pagar la seña.</p>
+            <strong>Tendras un tiempo limite de dos horas para elegir una opcion</strong>
+
+            {% if tiene_vales %}
+                <!-- Información del vale disponible -->
+                <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                    <i class="bi bi-ticket-perforated me-2"></i>
+                    <div>
+                        Tenés <strong>{{ vales.count }}</strong> vale{{ vales.count|pluralize:"s" }} disponible{{ vales.count|pluralize:"s" }} para <strong>{{ clase_programada.clase.turno.actividad.nombre }}</strong>.
+                        Podés usar uno para reservar sin costo.
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="accion" value="cancelar" class="btn btn-outline-danger">
+                        Cancelar notificación
+                    </button>
+                </form>
+                
+                {% if tiene_vales %}
+                <form method="post">
+                     {% csrf_token %}
+                    <input type="hidden" name="usar_vale" value="true">
+                    <button type="submit" name="accion" value="confirmar" class="btn btn-outline-success">
+                        <i class="fa-solid fa-ticket me-1"></i> Usar vale y confirmar
+                    </button>
+                </form>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="accion" value="confirmar" class="btn btn-success">
+                        <i class="fa-solid fa-credit-card me-1"></i> Pagar seña y confirmar
+                    </button>
+                </form>
+            </div>
+            <hr>
+        </div>
+    </div>
+</div>
+{% endblock %}

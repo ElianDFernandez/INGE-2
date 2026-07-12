@@ -1,0 +1,35 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 600px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="mb-3">¿Anotarte en la lista de espera?</h4>
+            
+            <div class="alert alert-info" role="alert">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <strong>{{ clase_programada.clase.turno.actividad.nombre }}</strong>
+                <br>
+                {{ clase_programada.dia }} {{ clase_programada.fecha }} 
+                de {{ clase_programada.clase.hora_inicio }} a {{ clase_programada.clase.hora_fin }}
+            </div>
+
+            <p class="text-muted">
+                Cuando se libere un cupo, te notificaremos por email. 
+                Tendrás 2 horas para pagar la seña y confirmar tu reserva.
+            </p>
+            <p class="text-muted">
+                Si aceptás, cuando se libere el cupo vas a poder pagar la seña de la clase.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-outline-primary w-100">Continuar a lista de espera</button>
+                    <a href="{% url 'reservas_disponibles' %}" class="btn btn-main-cad w-100">Volver</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

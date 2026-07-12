@@ -8,6 +8,8 @@ urlpatterns = [
     path('empleados/', include('empleados.urls')),
     path('reservas/', include('reservas.urls')),
     path('socios/', include('socios.urls')),
+    path('lista-espera/', include('lista_espera.urls')),
+    
 
     # App principal
     path('', include('app.urls')),

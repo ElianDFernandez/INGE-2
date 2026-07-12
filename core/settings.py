@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'empleados',
     'reservas',
     'socios',
+    'lista_espera'
 ]
 
 MIDDLEWARE = [
@@ -150,12 +151,12 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Configuración de Mailtrap
+# Configuración de Mailtrap 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST_USER = '76a696fd58288c'
-EMAIL_HOST_PASSWORD = '9112e531d2de12'
-EMAIL_PORT = 2525
+EMAIL_HOST_USER = 'a9909b4e9317ae'
+EMAIL_HOST_PASSWORD = '9978cd74278eb5'
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
@@ -163,3 +164,10 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ALLOWED_HOSTS = ['*', '192.168.0.45']
 
 MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-456594535387744-061719-30e42e9de5d5ad8d2179fbb357f65f7e-3479461531'
+# Configuaracion de celery 
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Argentina/Buenos_Aires'

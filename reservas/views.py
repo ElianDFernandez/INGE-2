@@ -6,6 +6,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.urls import reverse
+from lista_espera.models import ListaEspera, EstadoListaEspera
 import mercadopago
 from django.conf import settings
 from django.http import HttpResponse
@@ -37,6 +38,14 @@ def reservas_disponibles(request):
                 clases_superpuestas_ids.append(clase.id)
                 break
     
+
+    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado=EstadoReserva.ACTIVA).values_list('clase_programada_id', flat=True)
+    #Clases de lista de espera (filtrado por estados)
+    clases_en_lista_espera_cancelados = ListaEspera.objects.filter(user=request.user,estado=EstadoListaEspera.CANCELADO).values_list('clase_programada_id', flat=True)
+    clases_en_lista_espera_ids = ListaEspera.objects.filter(user=request.user,estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).values_list('clase_programada_id', flat=True)
+    
+    clases_reservadas_ids = Reserva.objects.filter(user=request.user, estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]).values_list('clase_programada_id', flat=True)
+    clases_programadas = [cp for cp in clases_programadas if cp.puede_reservarse]
 
     # TURNOS
     turnos = Turno.objects.filter(activo=True).select_related('actividad').prefetch_related(
@@ -83,10 +92,40 @@ def reservas_disponibles(request):
         estado='ACTIVA'
     ).values_list('turno_id', flat=True)
 
+    #me devuelve el cupo ocupado y disponible de la clase para la lista de espera (activa, seña pagada y notificados)
+    for clase in clases_programadas:
+        reservas_ocupadas = Reserva.objects.filter(
+            clase_programada=clase,
+            estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO]
+        ).count()
+
+        notificados = ListaEspera.objects.filter(
+            clase_programada=clase,
+            estado=EstadoListaEspera.NOTIFICADO
+        ).count()
+
+        ocupadas = reservas_ocupadas + notificados
+        clase.cupo_ocupado = ocupadas
+        clase.cupo_real = clase.clase.cupo_maximo - ocupadas
+        
+        #calcula posicion en lista de espera
+        entrada_lista = ListaEspera.objects.filter(
+        clase_programada=clase,
+        user=request.user,
+        estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).first()
+
+        if entrada_lista:
+            clase.posicion_lista = entrada_lista.get_posicion()
+        else:
+            clase.posicion_lista = None
+        
+
     return render(request, 'reservas_disponibles.html', {
         'clases_programadas': clases_programadas,
         'clases_reservadas_ids': list(clases_reservadas_ids),
         'clases_superpuestas_ids': list(clases_superpuestas_ids),
+        'clases_en_lista_espera_ids': list(clases_en_lista_espera_ids),
+        'clases_canceladas_lista_espera_ids': list(clases_en_lista_espera_cancelados),
         'turnos': turnos,
         'turnos_superpuestos_id': list(turnos_superpuestos_id),
         'inscripciones_ids': list(inscripciones_ids),
@@ -242,12 +281,16 @@ def pago_fallido(request, reserva_id):
 
 @login_required
 def reserva_list(request):
+
     hoy = timezone.localdate()
     reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
     inscripciones = Inscripcion.objects.filter(user=request.user)
+    lista_espera_inscripciones = ListaEspera.objects.filter(user=request.user,estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).select_related('clase_programada__clase__turno__actividad').order_by('fecha_anotacion')
+
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
-        'inscripciones': inscripciones
+        'inscripciones': inscripciones,
+        'lista_espera_inscripciones': lista_espera_inscripciones,
     })
 
 @login_required
@@ -323,6 +366,45 @@ def reserva_cancel(request, reserva_pk):
                 messages.success(request, 'Reserva cancelada correctamente.')
 
             reserva.save()
+
+            #Cuando se cancela una clase envia mensaje a los usuarios en lista de espera para esa clase
+            if ListaEspera.objects.filter(
+                clase_programada=reserva.clase_programada,
+                estado=EstadoListaEspera.PENDIENTE
+            ).exists():
+                from lista_espera.tasks import notificar_siguiente
+                notificar_siguiente.delay(reserva.clase_programada.id)
+
+
+            if resultado_cancelacion == 'vale':
+                from socios.models import Vale
+                import calendar as cal
+                hoy = timezone.localdate()
+                _, ultimo_dia = cal.monthrange(hoy.year, hoy.month)
+                Vale.objects.create(
+                    socio_id=request.user.id,
+                    actividad=turno.actividad,
+                    fecha_vencimiento=hoy.replace(day=ultimo_dia)
+                )
+                reserva.sena_devuelta = True
+                messages.success(request, 'Clase cancelada. Se generó un vale para la actividad.')
+            elif resultado_cancelacion == 'pierde':
+                messages.warning(request, 'Clase cancelada. No se genera vale por cancelar con menos de 48hs de anticipación.')
+            elif resultado_cancelacion == 'devuelve_total':
+                reserva.devolver_pago()
+                return redirect('simular_reembolso', reserva_pk=reserva.pk)
+            elif resultado_cancelacion == 'devuelve_sena':
+                reserva.devolver_pago()
+                return redirect('simular_reembolso', reserva_pk=reserva.pk)
+            elif resultado_cancelacion == 'pierde_total':
+                messages.warning(request, 'Reserva cancelada. El pago se pierde por cancelar con menos de 24hs de anticipación.')
+            elif resultado_cancelacion == 'pierde_sena':
+                messages.warning(request, 'Reserva cancelada. La seña se pierde por cancelar con menos de 24hs de anticipación.')
+            else:
+                messages.success(request, 'Reserva cancelada correctamente.')
+
+            reserva.save()
+
             return redirect('reserva_list')
     else:
         form = ReservaCancelForm()
