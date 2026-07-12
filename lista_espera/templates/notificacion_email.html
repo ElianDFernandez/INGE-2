@@ -28,30 +28,30 @@
                 </div>
             {% endif %}
 
-            <form method="post">
-                {% csrf_token %}
-                <div class="d-flex gap-2 justify-content-end mt-3">
-                    <button type="submit" name="accion" value="cancelar" class="btn btn-outline-danger">Cancelar notificación</button>
-                    {% if tiene_vales %}
-
-                        <button type="submit" name="accion" value="confirmar" class="btn btn-outline-success">
-                            <i class="fa-solid fa-ticket me-1"></i> Usar vale y confirmar
-                            <input type="hidden" name="usar_vale" value="true">
-                        </button>
-
-                        <button type="submit" name="accion" value="confirmar" class="btn btn-success">
-                            <i class="fa-solid fa-credit-card me-1"></i> Pagar seña y confirmar
-                        </button>
-
-                    {% else %}
-                    
-                        <div class="d-flex gap-2 flex-column flex-md-row">
-                            <button type="submit" name="accion" value="confirmar" class="btn btn-success">Pagar seña y confirmar</button>
-                        </div>
-
-                    {% endif %}
-                </div>
-            </form>
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="accion" value="cancelar" class="btn btn-outline-danger">
+                        Cancelar notificación
+                    </button>
+                </form>
+                
+                {% if tiene_vales %}
+                <form method="post">
+                     {% csrf_token %}
+                    <input type="hidden" name="usar_vale" value="true">
+                    <button type="submit" name="accion" value="confirmar" class="btn btn-outline-success">
+                        <i class="fa-solid fa-ticket me-1"></i> Usar vale y confirmar
+                    </button>
+                </form>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="accion" value="confirmar" class="btn btn-success">
+                        <i class="fa-solid fa-credit-card me-1"></i> Pagar seña y confirmar
+                    </button>
+                </form>
+            </div>
             <hr>
         </div>
     </div>

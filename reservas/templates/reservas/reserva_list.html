@@ -221,14 +221,14 @@
                                 <form method="post" action="{% url 'cancelar_lista_espera' entrada.clase_programada.pk %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
-                                        <i class="fa-solid fa-xmark me-1"></i> Darse de baja de lista de espera
+                                        <i class="fa-solid fa-xmark me-1"></i> Dar de baja
                                     </button>
                                 </form>
-                                {% elif entrada.estado == 'notificado' %}
-                                <a href="{% url 'confirmar_desde_email' entrada.pk %}" class="btn btn-sm btn-outline-success btn-accion-movil text-nowrap">
-                                    <i class="fa-solid fa-check me-1"></i> Confirmar
-                                </a>
+                                {% elif entrada.estado == 'notificado' %}                       
+                                    <span class="badge bg-success me-1">Cupo disponible</span>
+                                    <span class="text-muted small">Revisá tu correo</span>
                                 {% endif %}
+                                                            
                             </td>
                         </tr>
                         {% endfor %}

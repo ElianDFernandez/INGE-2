@@ -75,6 +75,11 @@ def confirmar_desde_email(request, lista_espera_id):
         messages.error(request, 'La notificación ya no es válida.')
         return redirect('reservas_disponibles')
     
+    from django.utils import timezone
+    if entrada.clase_programada.fecha < timezone.localdate():
+        messages.error(request, 'Esta clase ya pasó, el enlace no es válido.')
+        return redirect('reservas_disponibles')
+    
     #Si entro con un usuario diferente al que recibió el email,muy minucioso 
     if entrada.user != request.user:
         messages.error(request, 'Iniciá sesión con la cuenta que recibió el email para confirmar esta reserva.')
@@ -104,6 +109,15 @@ def confirmar_desde_email(request, lista_espera_id):
         accion = request.POST.get('accion')
 
         if accion == 'confirmar':
+            
+            if Reserva.objects.filter(
+                user=entrada.user,
+                clase_programada=entrada.clase_programada,
+                estado=EstadoReserva.INICIADA
+            ).exists():
+                messages.warning(request, 'Ya tenés un pago en proceso para esta clase.')
+                return redirect('reservas_disponibles')
+
             if Reserva.objects.filter(
                 user=entrada.user,
                 clase_programada=entrada.clase_programada,
@@ -183,7 +197,7 @@ def confirmar_desde_email(request, lista_espera_id):
             from lista_espera.tasks import notificar_siguiente
             notificar_siguiente.delay(entrada.clase_programada.id)
 
-            messages.success(request, 'Cancelaste la notificación y liberaste el cupo para la siguiente persona.')
+            messages.success(request, 'Cancelaste la confirmacion de esta clase.')
             return redirect('reservas_disponibles')
 
         messages.error(request, 'Acción inválida.')
@@ -228,7 +242,7 @@ def pago_exitoso_lista_espera(request, lista_espera_id, reserva_id):
     entrada.estado = EstadoListaEspera.CONFIRMADO
     entrada.save()
 
-    messages.success(request, 'Pago aceptado. Tu reserva quedó en estado pendiente de pago.')
+    messages.success(request, 'Pago aceptado. Tu reserva fue realizada con exito.')
     return redirect('reservas_disponibles')
 
 
@@ -255,6 +269,6 @@ def pago_fallido_lista_espera(request, lista_espera_id, reserva_id):
         reserva.estado = EstadoReserva.CANCELADA
         reserva.save()
 
-    messages.warning(request, 'El pago no pudo completarse. Podés reintentar dentro del tiempo de confirmación.')
+    messages.warning(request, 'El pago no pudo completarse. La reserva no pudo ser completada. Por favor intenta nuevamente.')
     return redirect('reservas_disponibles')
 
