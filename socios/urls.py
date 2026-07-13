@@ -7,5 +7,6 @@ urlpatterns = [
     path('reserva/<int:reserva_id>/asistencia/', views.registrar_asistencia, name='registrar_asistencia'),
     path('reserva/<int:reserva_id>/pago/', views.registrar_pago, name='registrar_pago'),
     path('reserva/<int:reserva_id>/devolucion/', views.registrar_devolucion, name='registrar_devolucion'),
+    path('inscripcion/<int:inscripcion_id>/pago/', views.registrar_pago_inscripcion, name='registrar_pago_inscripcion'),
     path('mis-vales/', views.socio_mis_vales, name='socio_mis_vales'),
 ]

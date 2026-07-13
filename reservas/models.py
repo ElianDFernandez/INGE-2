@@ -50,6 +50,14 @@ class Reserva(models.Model):
     mp_payment_id = models.CharField(max_length=255, null=True, blank=True)
 
     @property
+    def esta_inscripto_al_turno(self):
+        """Retorna True si el socio tiene una inscripción (ACTIVA o PENDIENTE_PAGO) al turno de esta reserva."""
+        return Inscripcion.objects.filter(
+            user=self.user,
+            turno=self.clase_programada.clase.turno,
+        ).exclude(estado=EstadoInscripcion.DE_BAJA).exists()
+
+    @property
     def corresponde_devolucion(self):
         if self.estado == EstadoReserva.CANCELADA and self.mp_payment_id and not self.clase_programada.ya_empezo:
             if self.fecha_cancelacion:
@@ -83,6 +91,7 @@ class Reserva(models.Model):
                 
 class EstadoInscripcion(models.TextChoices):
     INICIADA = 'INICIADA', 'Iniciada (En proceso de pago)'
+    PENDIENTE_PAGO = 'PENDIENTE_PAGO', 'Pendiente de pago'
     ACTIVA = 'ACTIVA', 'Activa'
     DE_BAJA = 'DE_BAJA', 'De Baja'
 
@@ -100,9 +109,12 @@ class Inscripcion(models.Model):
     mp_payment_id = models.CharField(max_length=255, null=True, blank=True)
 
     def reservar_clases_programadas(self):
-        clases_programadas = self.turno.get_clases_programadas().filter(
-            fecha__gte=timezone.localdate()
-        )
+        clases_programadas = [
+            cp for cp in self.turno.get_clases_programadas().filter(
+                fecha__gte=timezone.localdate()
+            )
+            if not cp.ya_empezo
+        ]
 
         for clase_programada in clases_programadas:
             # Buscar reserva existente (no cancelada)
@@ -202,12 +214,18 @@ class Inscripcion(models.Model):
         - Clases sin reserva: costo completo (100%).
         - Clases con reserva ACTIVA: ya pagó el 100%, no se cuenta.
         - Clases con reserva PENDIENTE_PAGO: pagó el 50%, se cuenta el 50% restante.
+        - Clases que ya finalizaron no se cobran.
         """
+        hoy = timezone.localdate()
+        ahora = timezone.now()
         clases_programadas = self.turno.get_clases_programadas().filter(
-            fecha__gte=timezone.localdate()
+            fecha__gte=hoy
         )
         costo_total = Decimal('0')
         for cp in clases_programadas:
+            # No cobrar clases que ya empezaron
+            if cp.ya_empezo:
+                continue
             reserva = Reserva.objects.filter(
                 user=self.user,
                 clase_programada=cp
@@ -224,19 +242,96 @@ class Inscripcion(models.Model):
     def get_costo_final(self):
         """
         Retorna el costo final del turno, aplicando descuentos si aplica.
-        - 20% de descuento si socio.get_cancelaciones() < 3.
+        - 20% de descuento si el socio NO tiene cancelaciones de turnos
+        - Y tiene menos de 3 cancelaciones de reservas individuales.
         """
         from socios.models import Socio
         costo_total = self.get_costo()
         descuento = Decimal('0')
         try:
             socio = Socio.objects.get(pk=self.user_id)
-            if socio.get_cancelaciones().count() < 3:
+            tiene_cancel_turnos = socio.get_cancelaciones().exists()
+            tiene_3_cancel_reservas = socio.get_cancelaciones_reservas().count() >= 3
+            if not tiene_cancel_turnos and not tiene_3_cancel_reservas:
                 descuento = costo_total * Decimal('0.20')
         except Exception:
-            pass  # Si no tiene socio asociado, no aplica descuento
-        costo_final = costo_total - descuento
-        return costo_final
+            pass
+        return costo_total - descuento
+
+    def get_costo_renovacion(self):
+        """
+        Costo para renovar un turno (socio ya inscripto del mes anterior).
+        Cobra el 100% de TODAS las clases del mes actual, sin importar si ya pasaron.
+        Esto incluye clases auto-generadas que aún no fueron pagadas.
+        """
+        hoy = timezone.localdate()
+        reservas = Reserva.objects.filter(
+            user=self.user,
+            clase_programada__clase__turno=self.turno,
+            clase_programada__fecha__month=hoy.month,
+            clase_programada__fecha__year=hoy.year
+        ).exclude(estado=EstadoReserva.CANCELADA).exclude(pago_confirmado=True)
+
+        return sum(r.clase_programada.clase.costo for r in reservas)
+
+    def get_costo_renovacion_final(self):
+        """
+        Costo final de renovación con descuento si aplica.
+        - 20% de descuento si el socio NO tiene cancelaciones de turnos
+        - Y tiene menos de 3 cancelaciones de reservas individuales.
+        """
+        from socios.models import Socio
+        costo_total = self.get_costo_renovacion()
+        descuento = Decimal('0')
+        try:
+            socio = Socio.objects.get(pk=self.user_id)
+            tiene_cancel_turnos = socio.get_cancelaciones().exists()
+            tiene_3_cancel_reservas = socio.get_cancelaciones_reservas().count() >= 3
+            if not tiene_cancel_turnos and not tiene_3_cancel_reservas:
+                descuento = costo_total * Decimal('0.20')
+        except Exception:
+            pass
+        return costo_total - descuento
+
+    def enviar_aviso_pago(self):
+        """
+        Envía un email al socio avisando que si no paga antes del día 15 del mes,
+        su turno será cancelado automáticamente.
+        """
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from django.conf import settings
+        from django.urls import reverse
+
+        hoy = timezone.localdate()
+        fecha_limite = hoy.replace(day=15)
+        if hoy >= fecha_limite:
+            fecha_limite = (hoy.replace(day=1) + timezone.timedelta(days=32)).replace(day=15)
+
+        costo = self.get_costo_renovacion_final()
+
+        url_pago = settings.URL_NGROK + reverse('renovar_inscripcion_confirm', args=[self.turno.pk])
+
+        html_message = render_to_string('reservas/email_aviso_pago.html', {
+            'usuario': self.user,
+            'turno': self.turno,
+            'actividad': self.turno.actividad,
+            'fecha_limite': fecha_limite,
+            'costo': costo,
+            'url_pago': url_pago,
+        })
+
+        text_message = strip_tags(html_message)
+
+        send_mail(
+            subject=f'Aviso de pago - {self.turno.nombre} ({self.turno.actividad.nombre})',
+            message=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[self.user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
 
 
 

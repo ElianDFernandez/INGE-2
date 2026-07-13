@@ -154,12 +154,13 @@ AUTHENTICATION_BACKENDS = [
 # Configuración de Mailtrap 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST_USER = 'a9909b4e9317ae'
-EMAIL_HOST_PASSWORD = '9978cd74278eb5'
-EMAIL_PORT = 587
+EMAIL_HOST_USER = '76a696fd58288c'
+EMAIL_HOST_PASSWORD = '9112e531d2de12'
+EMAIL_PORT = '2525'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+URL_NGROK = "https://headpiece-public-unclog.ngrok-free.dev"
 
 ALLOWED_HOSTS = ['*', '192.168.0.45']
 

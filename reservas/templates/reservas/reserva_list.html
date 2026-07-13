@@ -40,7 +40,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
                             {% for reserva in reservas %}
                             <tr class="{% if reserva.estado == 'CANCELADA' or reserva.estado == 'AUSENTE' %}text-muted table-light fila-cancelada{% endif %} align-middle">
                                 <td data-label="Actividad" class="ps-md-4 fw-medium text-dark">
@@ -55,12 +54,17 @@
                                 <td data-label="Espacio">
                                     {{ reserva.clase_programada.clase.get_espacio_display }}
                                 </td>
-                                
                                 <td data-label="Estado">
                                     {% if reserva.estado == 'PENDIENTE_PAGO' %}
-                                        <span class="badge bg-warning text-dark border">
-                                            {{ reserva.get_estado_display }}
-                                        </span>
+                                        {% if reserva.esta_inscripto_al_turno %}
+                                            <span class="badge bg-info bg-opacity-10 text-dark border">
+                                                <i class="fa-solid fa-link me-1"></i>Paga con turno
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark border">
+                                                {{ reserva.get_estado_display }}
+                                            </span>
+                                        {% endif %}
                                     {% elif reserva.estado == 'ACTIVA' %}
                                         <span class="badge bg-success bg-opacity-10 text-dark border">
                                             {{ reserva.get_estado_display }}
@@ -71,7 +75,7 @@
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td data-label="Asistencia" class="text-md-center pe-md-4">
+                                <td data-label="Asistencia" class="pe-md-4">
                                     {% if reserva.asistencia %}
                                         <span class="badge bg-success bg-opacity-10 text-dark border">
                                             Presente
@@ -86,31 +90,27 @@
                                         </span>
                                     {% endif %}
                                 </td>
-                                
-                                <td data-label="Acciones" class="text-md-end pe-md-4">
-                                    {% if reserva.estado == 'PENDIENTE_PAGO' and not reserva.clase_programada.ya_finalizo %}
-                                    <a href="{% url 'pagar_restante' reserva.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap mb-1 mb-md-0 me-md-1">
+                                <td data-label="Acciones" class="text-md-end pe-md-2">
+                                    {% if reserva.estado == 'PENDIENTE_PAGO' and not reserva.clase_programada.ya_finalizo and not reserva.esta_inscripto_al_turno %}
+                                    <a href="{% url 'pagar_restante' reserva.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-credit-card me-1"></i> Pagar Restante
                                     </a>
                                     {% endif %}
-<!-- CHEQUEAR MERGE -->
-
                                     {% if reserva.estado == 'ACTIVA' and not reserva.clase_programada.ya_finalizo and reserva.clase_programada.puede_pasar_presente%}
                                     <a href="{% url 'reserva_qr' reserva.pk %}" class="btn btn-sm btn-outline-primary btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-qrcode me-1"></i> Ver QR
                                     </a>
                                     {% endif %}
-
-                                    {% if reserva.estado == 'ACTIVA' and not reserva.asistencia and not reserva.clase_programada.ya_finalizo%}
-                                    <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
-                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
-                                    </a>
+                                    {% if not reserva.esta_inscripto_al_turno and not reserva.clase_programada.ya_finalizo %}
+                                        {% if reserva.estado == 'ACTIVA' or reserva.estado == 'PENDIENTE_PAGO' and not reserva.asistencia %}
+                                        <a href="{% url 'reserva_cancel' reserva.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
+                                            <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                                        </a>
+                                        {% endif %}
                                     {% endif %}
-                                    
                                 </td>
                             </tr>
                             {% endfor %}
-                    
                         </tbody>
                     </table>
                 </div>
@@ -148,7 +148,7 @@
                         </thead>
                         <tbody>
                             {% for inscripcion in inscripciones %}
-                            <tr class="{% if inscripcion.estado != 'ACTIVA' %}text-muted table-light fila-cancelada{% endif %} align-middle">
+                            <tr class="{% if inscripcion.estado == 'DE_BAJA' %}text-muted table-light fila-cancelada{% endif %} align-middle">
                                 <td data-label="Actividad" class="ps-md-4 fw-medium text-dark">
                                     {{ inscripcion.turno.actividad.nombre }}
                                 </td>
@@ -159,12 +159,22 @@
                                     {{ inscripcion.fecha_alta }}
                                 </td>
                                 <td data-label="Estado">
-                                    <span class="badge {% if inscripcion.estado == 'ACTIVA' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-dark border">
+                                    <span class="badge {% if inscripcion.estado == 'ACTIVA' %}bg-success{% elif inscripcion.estado == 'PENDIENTE_PAGO' %}bg-warning text-dark{% else %}bg-secondary{% endif %} bg-opacity-10 text-dark border">
                                         {{ inscripcion.get_estado_display }}
                                     </span>
                                 </td>
                                 <td data-label="Acciones" class="text-md-end pe-md-4">
-                                    {% if inscripcion.estado == 'ACTIVA' %}
+                                    {% if inscripcion.estado == 'PENDIENTE_PAGO' %}
+                                    <span class="badge bg-warning text-dark me-2">${{ inscripcion.costo_renovacion|floatformat:2 }}</span>
+                                    <a href="{% url 'renovar_inscripcion_confirm' inscripcion.turno.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap">
+                                        <i class="fa-solid fa-credit-card me-1"></i> Pagar Turno
+                                    </a>
+                                    {% elif inscripcion.estado == 'ACTIVA' %}
+                                    {% if inscripcion.costo_renovacion and inscripcion.costo_renovacion > 0 %}
+                                    <a href="{% url 'renovar_inscripcion_confirm' inscripcion.turno.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap me-1">
+                                        <i class="fa-solid fa-arrows-rotate me-1"></i> Renovar Turno
+                                    </a>
+                                    {% endif %}
                                     <a href="{% url 'inscripcion_cancel' inscripcion.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-xmark me-1"></i> Dar de baja
                                     </a>
@@ -302,7 +312,10 @@
         }
 
         .tabla-responsive-cards td[data-label="Acciones"] {
-            display: block;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: flex-end;
             padding: 1rem;
             background-color: rgba(0,0,0,0.02);
         }
@@ -310,7 +323,6 @@
             display: none;
         }
         .btn-accion-movil {
-            width: 100%;
             padding: 0.5rem;
         }
     }

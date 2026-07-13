@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib import messages
-from reservas.models import EstadoReserva, Reserva
+from reservas.models import EstadoReserva, Reserva, Inscripcion
 from socios.models import Socio
 
 # 1. LISTADO GENERAL DE SOCIOS + BUSCADOR
@@ -35,9 +35,13 @@ def socio_reservas(request, socio_id):
     reservas = Reserva.objects.filter(user=socio).select_related(
         'clase_programada__clase__turno__actividad'
     ).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
+    inscripciones = Inscripcion.objects.filter(user=socio).select_related(
+        'turno__actividad'
+    ).order_by('-fecha_alta').exclude(estado='INICIADA')
     return render(request, 'socios/socio_reservas.html', {
         'socio': socio,
-        'reservas': reservas
+        'reservas': reservas,
+        'inscripciones': inscripciones,
     })
 
 # 3. ACCIÓN: REGISTRAR ASISTENCIA MANUAL
@@ -83,6 +87,19 @@ def registrar_devolucion(request, reserva_id):
         # Mensaje aclaratorio de que es manual
         messages.success(request, f"Reembolso registrado para {reserva.user.username}.")
         
+    return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
+
+@login_required
+@staff_member_required(login_url='home')
+def registrar_pago_inscripcion(request, inscripcion_id):
+    if request.method == 'POST':
+        inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id)
+        inscripcion.estado = 'ACTIVA'
+        inscripcion.mp_payment_id = 'MANUAL'
+        inscripcion.save()
+        # Crear las reservas de las clases del turno
+        inscripcion.reservar_clases_programadas()
+        messages.success(request, f"Pago de turno registrado con éxito para {inscripcion.user.username}.")
     return redirect(request.META.get('HTTP_REFERER', 'socio_list'))
 
 @login_required

@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (reserva_list, reserva_confirm, reserva_cancel, reservas_disponibles,inscripcion_confirm, inscripcion_cancel)
 from lista_espera import views as lista_espera_views
 from django.urls import path, include
-from .views import (reservas_disponibles, reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia, inscripcion_confirm, inscripcion_cancel, inscripcion_pago_exitoso, inscripcion_pago_fallido, pago_exitoso, pago_fallido, pagar_restante, simular_reembolso)
+from .views import (reservas_disponibles, reserva_list, reserva_confirm, reserva_cancel, reserva_qr, reserva_qr_image, escanear_qr, confirmar_asistencia, inscripcion_confirm, inscripcion_cancel, inscripcion_pago_exitoso, inscripcion_pago_fallido, pago_exitoso, pago_fallido, pagar_restante, simular_reembolso, renovar_inscripcion_confirm, renovar_pago_exitoso, renovar_pago_fallido)
 
 urlpatterns = [
     # Panel de Mis Reservas
@@ -41,6 +41,11 @@ urlpatterns = [
     # Pago de Inscripciones
     path('inscripcion/<int:inscripcion_id>/pago-exitoso/', inscripcion_pago_exitoso, name='inscripcion_pago_exitoso'),
     path('inscripcion/<int:inscripcion_id>/pago-fallido/', inscripcion_pago_fallido, name='inscripcion_pago_fallido'),
+
+    # Renovación de Turno (socio ya inscripto)
+    path('renovar_turno/<int:turno_pk>/', renovar_inscripcion_confirm, name='renovar_inscripcion_confirm'),
+    path('renovacion/<int:inscripcion_id>/pago-exitoso/', renovar_pago_exitoso, name='renovar_pago_exitoso'),
+    path('renovacion/<int:inscripcion_id>/pago-fallido/', renovar_pago_fallido, name='renovar_pago_fallido'),
 
     # Simulación de reembolso
     path('reembolso/<int:reserva_pk>/', simular_reembolso, name='simular_reembolso'),

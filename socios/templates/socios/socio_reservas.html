@@ -18,8 +18,14 @@
             </a>
         </div>
     </div>
-    <div class="card shadow-sm border-0 mx-3 mx-md-0">
-        <div class="card-body p-0">
+    <!-- Clases individuales -->
+    <div class="card shadow-sm border-0 mx-3 mx-md-0 mb-4">
+        <div class="card-body">
+            <span class="fw-bold fs-5 fs-md-4">
+                Clases Individuales
+            </span>
+        </div>
+        <div class="card-body pt-0 px-2 px-md-3">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle text-nowrap">
                     <thead style="background-color: var(--cad-primary); color: white;">
@@ -45,12 +51,14 @@
                             <td>
                                 {% if reserva.estado|lower == 'cancelada' %}
                                     <span class="badge bg-danger">Cancelada</span>
+                                {% elif reserva.estado == 'PENDIENTE_PAGO' and reserva.esta_inscripto_al_turno %}
+                                    <span class="badge bg-info text-dark"><i class="fa-solid fa-link me-1"></i>Paga con turno</span>
                                 {% else %}
-                                    <span class="badge bg-primary">{{ reserva.estado }}</span>
+                                    <span class="badge bg-primary">{{ reserva.get_estado_display }}</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if reserva.estado|lower != 'cancelada' %}
+                                {% if reserva.clase_programada.ya_finalizo %}
                                     {% if reserva.asistio %}
                                         <span class="badge bg-success mb-1"><i class="fa-solid fa-check me-1"></i>Presente</span>
                                         <small class="text-muted d-block" style="font-size: 0.70rem;">Por: {{ reserva.get_metodo_asistencia_display }}</small>
@@ -67,12 +75,11 @@
                             <td>
                                 {% if reserva.estado|lower != 'cancelada' %}
                                     {% if reserva.pago_confirmado %}
-                                        <span class="badge bg-success"><i class="fa-solid fa-dollar-sign me-1"></i>Abonado</span>
-                                        <small class="text-muted d-block" style="font-size: 0.70rem;">Vía: {{ reserva.get_metodo_pago_display }}</small>
+                                        <span class="badge bg-success">Abonado</span>
                                     {% elif reserva.clase_programada.ya_finalizo %}
-                                        <span class="badge bg-danger"><i class="fa-solid fa-circle-exclamation me-1"></i>Adeuda</span>
+                                        <span class="badge bg-danger">Adeuda</span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark"><i class="fa-regular fa-clock me-1"></i>Pendiente</span>
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
                                     {% endif %}
                                 {% else %}
                                     <span>-</span>
@@ -107,7 +114,7 @@
                                             </form>
                                         {% endif %}
 
-                                        {% if not reserva.pago_confirmado %}
+                                        {% if not reserva.pago_confirmado and not reserva.esta_inscripto_al_turno %}
                                             <form action="{% url 'registrar_pago' reserva.id %}" method="POST" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Registrar pago">
@@ -126,6 +133,65 @@
                         {% empty %}
                         <tr>
                             <td colspan="8" class="text-center py-4 text-muted">No hay reservas registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Turnos -->
+    <div class="card shadow-sm border-0 mx-3 mx-md-0 mb-4">
+        <div class="card-body">
+            <span class="fw-bold fs-5 fs-md-4">
+                Turnos
+            </span>
+        </div>
+        <div class="card-body pt-0 px-2 px-md-3">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle text-nowrap">
+                    <thead style="background-color: var(--cad-primary); color: white;">
+                        <tr>
+                            <th class="ps-4">Actividad</th>
+                            <th>Turno</th>
+                            <th>Fecha de alta</th>
+                            <th>Estado</th>
+                            <th class="pe-4 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inscripcion in inscripciones %}
+                        <tr class="{% if inscripcion.estado == 'DE_BAJA' %}text-muted fila-cancelada{% endif %}">
+                            <td class="ps-4">{{ inscripcion.turno.actividad.nombre }}</td>
+                            <td>{{ inscripcion.turno.nombre }}</td>
+                            <td>{{ inscripcion.fecha_alta|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if inscripcion.estado == 'ACTIVA' %}
+                                    <span class="badge bg-success">Activa</span>
+                                {% elif inscripcion.estado == 'DE_BAJA' %}
+                                    <span class="badge bg-secondary">De Baja</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ inscripcion.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                {% if inscripcion.estado == 'PENDIENTE_PAGO' %}
+                                    <span class="badge bg-warning text-dark me-2">${{ inscripcion.get_costo_final|floatformat:2 }}</span>
+                                    <form action="{% url 'registrar_pago_inscripcion' inscripcion.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Registrar pago">
+                                            <i class="fa-solid fa-money-bill-wave me-1"></i>Pagar
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span>-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">Sin inscripciones a turnos.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

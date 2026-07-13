@@ -82,7 +82,7 @@ class Socio(User):
         return self.get_vales_disponibles_por_actividad(actividad).exists()
     
     def get_cancelaciones(self):
-        """Retorna las cancelaciones de inscripciones del mes actual."""
+        """Retorna las cancelaciones de inscripciones (turnos) del mes actual."""
         from reservas.models import Inscripcion, EstadoInscripcion
         hoy = timezone.localdate()
         primer_dia_mes = hoy.replace(day=1)
@@ -93,6 +93,19 @@ class Socio(User):
             estado=EstadoInscripcion.DE_BAJA,
             fecha_baja__date__range=(primer_dia_mes, ultimo_dia_mes)
         ).order_by('-fecha_baja')
+
+    def get_cancelaciones_reservas(self):
+        """Retorna las cancelaciones de reservas individuales del mes actual."""
+        from reservas.models import Reserva, EstadoReserva
+        hoy = timezone.localdate()
+        primer_dia_mes = hoy.replace(day=1)
+        ultimo_dia_mes = (primer_dia_mes + timezone.timedelta(days=32)).replace(day=1) - timezone.timedelta(days=1)
+
+        return Reserva.objects.filter(
+            user=self,
+            estado=EstadoReserva.CANCELADA,
+            fecha_cancelacion__date__range=(primer_dia_mes, ultimo_dia_mes)
+        )
 
 class Vale(models.Model):
     socio = models.ForeignKey(Socio, on_delete=models.CASCADE, related_name='vales')

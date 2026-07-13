@@ -1,0 +1,119 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Renovar Turno{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h3 style="color: var(--cad-primary);">
+                    <i class="fa-solid fa-arrows-rotate me-2"></i>Renovar Turno
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h5>
+                        {{ turno.nombre }} - {{ turno.actividad.nombre }}
+                    </h5>
+                    <span class="badge bg-primary-subtle text-primary">
+                        <i class="fa-solid fa-repeat me-1"></i>Renovación mensual
+                    </span>
+                </div>
+
+                <h6 class="mb-3">
+                    Clases del mes a abonar:
+                </h6>
+                <table class="table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Espacio</th>
+                            <th class="text-end">Costo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reserva in reservas %}
+                        <tr {% if reserva.clase_programada.ya_empezo %}class="table-secondary"{% endif %}>
+                            <td>
+                                <span class="fw-semibold">
+                                    {{ reserva.clase_programada.fecha }}
+                                </span>
+                                {% if reserva.clase_programada.ya_empezo %}
+                                <span class="badge bg-secondary ms-1">Ya pasó</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ reserva.clase_programada.clase.hora_inicio }}
+                                -
+                                {{ reserva.clase_programada.clase.hora_fin }}
+                            </td>
+                            <td>
+                                {{ reserva.clase_programada.clase.get_espacio_display }}
+                            </td>
+                            <td class="text-end">
+                                ${{ reserva.clase_programada.clase.costo|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-muted">
+                                No hay clases pendientes de pago.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if reservas %}
+                <div class="border-top pt-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold fs-5">Costo total:</span>
+                        <span class="fw-bold fs-5">${{ costo_total|floatformat:2 }}</span>
+                    </div>
+                    {% if descuento > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-success">
+                        <span><i class="fa-solid fa-tag me-1"></i>Descuento abonado (20%):</span>
+                        <span>-${{ descuento|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+                        <span class="fw-bold fs-4">Total a pagar:</span>
+                        <span class="fw-bold fs-4 text-success">${{ valor_a_pagar|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="alert alert-info d-flex align-items-center mb-4 py-3" role="alert">
+                    <i class="fa-solid fa-circle-info me-3 fs-4"></i>
+                    <div class="small">
+                        <strong>Renovación mensual:</strong> Al confirmar, se marcarán como pagadas todas las clases de este mes (incluyendo las que ya pasaron). Esto asegura tu lugar en el turno por todo el mes.
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end mt-4">
+                        <a href="{% url 'reserva_list' %}" class="btn btn-light border me-2">
+                            Cancelar
+                        </a>
+                        {% if reservas %}
+                        <button type="submit" class="btn btn-main-cad">
+                            <i class="fa-solid fa-credit-card me-1"></i>
+                            Pagar y Renovar (${{ valor_a_pagar|floatformat:2 }})
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-main-cad" disabled>
+                            No hay clases pendientes
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

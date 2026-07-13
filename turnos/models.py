@@ -142,9 +142,9 @@ class Clase(models.Model):
 
         # Primer día del mes siguiente al próximo como límite (genera mes anterior + actual + siguiente)
         if hoy.month >= 11:
-            fecha_limite = hoy.replace(year=hoy.year + 1, month=(hoy.month + 2) % 12 or 12, day=1)
+            fecha_limite = hoy.replace(year=hoy.year + 1, month=(hoy.month + 1) % 12 or 12, day=1)
         else:
-            fecha_limite = hoy.replace(month=hoy.month + 2, day=1)
+            fecha_limite = hoy.replace(month=hoy.month + 1, day=1)
 
         # Buscar la primera ocurrencia del día de la semana
         while fecha.weekday() != dias[self.dia]:

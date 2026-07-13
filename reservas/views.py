@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Exists, OuterRef
 from django.contrib import messages
 from django.urls import reverse
 from lista_espera.models import ListaEspera, EstadoListaEspera
@@ -14,13 +14,13 @@ from django.http import HttpResponse
 from io import BytesIO
 import qrcode
 
-from .models import Reserva, EstadoReserva, Inscripcion
+from .models import Reserva, EstadoReserva, Inscripcion, EstadoInscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
 
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
 
-URL_NGROK = "https://scalding-secluding-headwear.ngrok-free.dev"
+URL_NGROK = "https://headpiece-public-unclog.ngrok-free.dev"
 
 @login_required
 def reservas_disponibles(request):
@@ -284,8 +284,15 @@ def reserva_list(request):
 
     hoy = timezone.localdate()
     reservas = Reserva.objects.filter(user=request.user).select_related('clase_programada__clase__turno__actividad').order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio').exclude(estado='INICIADA')
-    inscripciones = Inscripcion.objects.filter(user=request.user)
+    inscripciones = Inscripcion.objects.filter(user=request.user).exclude(estado='INICIADA')
     lista_espera_inscripciones = ListaEspera.objects.filter(user=request.user,estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]).select_related('clase_programada__clase__turno__actividad').order_by('fecha_anotacion')
+
+    # Calcular costo de renovación para inscripciones ACTIVAS y PENDIENTE_PAGO
+    for inscripcion in inscripciones:
+        if inscripcion.estado in ('ACTIVA', 'PENDIENTE_PAGO'):
+            inscripcion.costo_renovacion = inscripcion.get_costo_renovacion_final()
+        else:
+            inscripcion.costo_renovacion = None
 
     return render(request, 'reservas/reserva_list.html', {
         'reservas': reservas, 
@@ -375,36 +382,6 @@ def reserva_cancel(request, reserva_pk):
                 from lista_espera.tasks import notificar_siguiente
                 notificar_siguiente.delay(reserva.clase_programada.id)
 
-
-            if resultado_cancelacion == 'vale':
-                from socios.models import Vale
-                import calendar as cal
-                hoy = timezone.localdate()
-                _, ultimo_dia = cal.monthrange(hoy.year, hoy.month)
-                Vale.objects.create(
-                    socio_id=request.user.id,
-                    actividad=turno.actividad,
-                    fecha_vencimiento=hoy.replace(day=ultimo_dia)
-                )
-                reserva.sena_devuelta = True
-                messages.success(request, 'Clase cancelada. Se generó un vale para la actividad.')
-            elif resultado_cancelacion == 'pierde':
-                messages.warning(request, 'Clase cancelada. No se genera vale por cancelar con menos de 48hs de anticipación.')
-            elif resultado_cancelacion == 'devuelve_total':
-                reserva.devolver_pago()
-                return redirect('simular_reembolso', reserva_pk=reserva.pk)
-            elif resultado_cancelacion == 'devuelve_sena':
-                reserva.devolver_pago()
-                return redirect('simular_reembolso', reserva_pk=reserva.pk)
-            elif resultado_cancelacion == 'pierde_total':
-                messages.warning(request, 'Reserva cancelada. El pago se pierde por cancelar con menos de 24hs de anticipación.')
-            elif resultado_cancelacion == 'pierde_sena':
-                messages.warning(request, 'Reserva cancelada. La seña se pierde por cancelar con menos de 24hs de anticipación.')
-            else:
-                messages.success(request, 'Reserva cancelada correctamente.')
-
-            reserva.save()
-
             return redirect('reserva_list')
     else:
         form = ReservaCancelForm()
@@ -419,21 +396,27 @@ def reserva_cancel(request, reserva_pk):
 @login_required
 def inscripcion_confirm(request, turno_pk):
     turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
-    clases = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate()).exclude(
-        reserva__user=request.user,
-        reserva__estado=EstadoReserva.ACTIVA
-    )
+    # Solo clases futuras que NO hayan empezado
+    clases = [
+        cp for cp in turno.get_clases_programadas().filter(
+            fecha__gte=timezone.localdate()
+        )
+        if not cp.ya_empezo
+    ]
 
     inscripcion_temp = Inscripcion(user=request.user, turno=turno)
     costo_total = float(inscripcion_temp.get_costo())
     valor_a_pagar = float(inscripcion_temp.get_costo_final())
     descuento = costo_total - valor_a_pagar
 
-    # Costo bruto: todas las clases futuras sin importar estado
-    todas_futuras = turno.get_clases_programadas().filter(fecha__gte=timezone.localdate())
+    # Costo bruto: solo clases que no empezaron
+    todas_futuras = [
+        cp for cp in turno.get_clases_programadas().filter(fecha__gte=timezone.localdate())
+        if not cp.ya_empezo
+    ]
     costo_total_bruto = sum(float(cp.clase.costo) for cp in todas_futuras)
 
-    # Calcular total ya pagado sobre TODAS las clases futuras (incluye ACTIVA)
+    # Calcular total ya pagado sobre las clases válidas
     total_ya_pagado = 0.0
     for cp in todas_futuras:
         reserva = Reserva.objects.filter(
@@ -569,6 +552,153 @@ def inscripcion_pago_fallido(request, inscripcion_id):
     return redirect('reservas_disponibles')
 
 @login_required
+def renovar_inscripcion_confirm(request, turno_pk):
+    """Vista para renovar un turno (socio ya inscripto del mes anterior)."""
+    from socios.models import Socio
+    turno = get_object_or_404(Turno, pk=turno_pk, activo=True)
+
+    # Para socios con inscripción ACTIVA o PENDIENTE_PAGO (seña)
+    inscripcion = Inscripcion.objects.filter(
+        user=request.user, turno=turno, estado__in=['ACTIVA', 'PENDIENTE_PAGO']
+    ).first()
+    if not inscripcion:
+        messages.warning(request, 'No tenés una inscripción para este turno.')
+        return redirect('reservas_disponibles')
+
+    hoy = timezone.localdate()
+
+    # TODAS las reservas del mes actual (pasadas y futuras), no pagadas
+    reservas = list(Reserva.objects.filter(
+        user=request.user,
+        clase_programada__clase__turno=turno,
+        clase_programada__fecha__month=hoy.month,
+        clase_programada__fecha__year=hoy.year
+    ).exclude(
+        estado=EstadoReserva.CANCELADA
+    ).exclude(
+        pago_confirmado=True
+    ).select_related(
+        'clase_programada__clase'
+    ).order_by('clase_programada__fecha', 'clase_programada__clase__hora_inicio'))
+
+    costo_total = float(inscripcion.get_costo_renovacion())
+    valor_a_pagar = float(inscripcion.get_costo_renovacion_final())
+    descuento = costo_total - valor_a_pagar
+
+    if request.method == 'POST':
+        if valor_a_pagar <= 0:
+            messages.warning(request, 'No hay clases pendientes de pago.')
+            return redirect('reserva_list')
+
+        # Crear inscripcion temporal para el pago (o reutilizar la existente)
+        inscripcion_pago = Inscripcion.objects.create(
+            user=request.user,
+            turno=turno,
+            estado='INICIADA'
+        )
+
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+
+        url_exito = f"{URL_NGROK}/reservas/renovacion/{inscripcion_pago.id}/pago-exitoso/"
+        url_fallo = f"{URL_NGROK}/reservas/renovacion/{inscripcion_pago.id}/pago-fallido/"
+
+        preference_data = {
+            "items": [
+                {
+                    "title": f"Renovación: {turno.nombre} - {turno.actividad.nombre}",
+                    "quantity": 1,
+                    "unit_price": valor_a_pagar,
+                }
+            ],
+            "back_urls": {
+                "success": url_exito,
+                "failure": url_fallo,
+                "pending": url_fallo
+            },
+            "auto_return": "approved",
+        }
+
+        try:
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+
+            inscripcion_pago.mp_preference_id = preference['id']
+            inscripcion_pago.save()
+
+            return redirect(preference['sandbox_init_point'])
+
+        except Exception as e:
+            print(">>> ERROR EN PYTHON:", e)
+            inscripcion_pago.delete()
+            messages.error(request, 'Error en el pago. No se ha podido establecer la conexión. Intente más tarde.')
+            return redirect('reservas_disponibles')
+
+    return render(request, 'inscripciones/renovar_confirm.html', {
+        'turno': turno,
+        'reservas': reservas,
+        'costo_total': costo_total,
+        'descuento': descuento,
+        'valor_a_pagar': valor_a_pagar,
+    })
+
+@login_required
+def renovar_pago_exitoso(request, inscripcion_id):
+    """Pago exitoso de renovación: marca las clases como pagadas."""
+    inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id, user=request.user)
+    payment_id = request.GET.get('payment_id')
+
+    if payment_id:
+        # Buscar la inscripcion original (ACTIVA o PENDIENTE_PAGO) y marcar sus clases como pagadas
+        inscripcion_original = Inscripcion.objects.filter(
+            user=request.user,
+            turno=inscripcion.turno,
+            estado__in=['ACTIVA', 'PENDIENTE_PAGO']
+        ).exclude(pk=inscripcion.pk).first()
+
+        if inscripcion_original:
+            # Marcar clases futuras como pagadas
+            inscripcion_original.reservar_clases_programadas()
+
+            # Marcar clases pasadas del mes como pagadas (las que ya pasaron)
+            hoy = timezone.localdate()
+            reservas_pasadas = Reserva.objects.filter(
+                user=request.user,
+                clase_programada__clase__turno=inscripcion.turno,
+                clase_programada__fecha__month=hoy.month,
+                clase_programada__fecha__year=hoy.year,
+                clase_programada__fecha__lt=hoy
+            ).exclude(estado=EstadoReserva.CANCELADA).exclude(pago_confirmado=True)
+            for reserva in reservas_pasadas:
+                reserva.pago_confirmado = True
+                reserva.estado = EstadoReserva.ACTIVA
+                reserva.save()
+
+            # Activar la inscripcion si estaba PENDIENTE_PAGO
+            if inscripcion_original.estado != EstadoInscripcion.ACTIVA:
+                inscripcion_original.estado = EstadoInscripcion.ACTIVA
+                inscripcion_original.save()
+
+        # Eliminar la inscripcion temporal INICIADA
+        inscripcion.delete()
+
+        messages.success(
+            request,
+            f'¡Renovación exitosa! Tus clases de {inscripcion.turno.nombre} ({inscripcion.turno.actividad.nombre}) están confirmadas.'
+        )
+    else:
+        inscripcion.delete()
+        messages.warning(request, 'Pago recibido pero sin ID de transacción. Contactá soporte.')
+
+    return redirect('reserva_list')
+
+@login_required
+def renovar_pago_fallido(request, inscripcion_id):
+    inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id, user=request.user)
+    inscripcion.delete()
+    messages.error(request, 'El pago no pudo procesarse.')
+    return redirect('reservas_disponibles')
+
+@login_required
 def simular_reembolso(request, reserva_pk):
     """Simula una pantalla de devolución de MercadoPago."""
     reserva = get_object_or_404(
@@ -598,6 +728,10 @@ def pagar_restante(request, reserva_id):
     # Asegurarnos de que solo se pueda pagar el restante si está en el estado correcto
     if reserva.estado != EstadoReserva.PENDIENTE_PAGO:
         # Si alguien quiere hacer trampa, lo mandamos de vuelta
+        return redirect('reserva_list')
+
+    # Si está inscripto al turno, no puede pagar la clase individual
+    if reserva.esta_inscripto_al_turno:
         return redirect('reserva_list')
 
     precio_total = reserva.clase_programada.clase.costo
