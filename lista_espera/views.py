@@ -9,7 +9,7 @@ from .models import ListaEspera, EstadoListaEspera
 from turnos.models import ClaseProgramada
 from reservas.models import Reserva, EstadoReserva
 
-URL_NGROK = "https://handstand-aghast-left.ngrok-free.dev"
+URL_NGROK = "https://ashy-streak-slather.ngrok-free.dev"
 
 @login_required
 def inscribirse_lista_espera(request, clase_programada_pk):
@@ -96,10 +96,14 @@ def confirmar_desde_email(request, lista_espera_id):
         messages.error(request, 'El plazo de confirmación expiró. El cupo se ofreció al siguiente socio.')
         return redirect('reservas_disponibles')
     
-    #Si el enlace no esta disponible 
+    if entrada.estado == EstadoListaEspera.EXPIRADO:
+        messages.error(request, 'El plazo de confirmación expiró. El cupo se ofreció al siguiente socio.')
+        return redirect('reservas_disponibles')
+
     if entrada.estado != EstadoListaEspera.NOTIFICADO:
         messages.error(request, 'Este enlace ya no es válido.')
-        return redirect('reservas_disponibles')
+        return redirect('reservas_disponibles')    
+
     
     actividad = entrada.clase_programada.clase.turno.actividad
     vales_disponibles = request.user.vales.filter(actividad=actividad,usado=False,fecha_vencimiento__gte=timezone.localdate())
@@ -220,10 +224,14 @@ def pago_exitoso_lista_espera(request, lista_espera_id, reserva_id):
     if payment_id:
         reserva.mp_payment_id = payment_id
 
+    # Si expiró mientras estaba pagando en Mercado Pago,devuelvo pago
     if not entrada.puede_confirmar():
+
         if reserva.estado == EstadoReserva.INICIADA:
             reserva.estado = EstadoReserva.CANCELADA
-            reserva.save()
+
+        reserva.sena_devuelta = True
+        reserva.save(update_fields=['estado', 'sena_devuelta'])
 
         entrada.estado = EstadoListaEspera.EXPIRADO
         entrada.save()
@@ -231,7 +239,10 @@ def pago_exitoso_lista_espera(request, lista_espera_id, reserva_id):
         from lista_espera.tasks import notificar_siguiente
         notificar_siguiente.delay(entrada.clase_programada.id)
 
-        messages.error(request, 'El plazo de confirmación expiró. El cupo se ofreció al siguiente socio.')
+        messages.warning(
+            request,
+            'El plazo de confirmación expiró. El pago fue reembolsado.'
+        )
         return redirect('reservas_disponibles')
 
     if reserva.estado == EstadoReserva.INICIADA:
@@ -256,7 +267,7 @@ def pago_fallido_lista_espera(request, lista_espera_id, reserva_id):
             reserva.estado = EstadoReserva.CANCELADA
             reserva.save()
 
-        entrada.estado = EstadoListaEspera.CANCELADO
+        entrada.estado = EstadoListaEspera.EXPIRADO
         entrada.save()
 
         from lista_espera.tasks import notificar_siguiente
@@ -269,6 +280,6 @@ def pago_fallido_lista_espera(request, lista_espera_id, reserva_id):
         reserva.estado = EstadoReserva.CANCELADA
         reserva.save()
 
-    messages.warning(request, 'El pago no pudo completarse. La reserva no pudo ser completada. Por favor intenta nuevamente.')
+    messages.warning(request, 'El pago no pudo completarse. Por favor intenta nuevamente en unos minutos.')
     return redirect('reservas_disponibles')
 

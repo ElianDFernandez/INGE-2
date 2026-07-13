@@ -20,7 +20,7 @@ from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, Inscri
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
 
-URL_NGROK = "https://scalding-secluding-headwear.ngrok-free.dev"
+URL_NGROK = "https://ashy-streak-slather.ngrok-free.dev"
 
 @login_required
 def reservas_disponibles(request):
@@ -337,36 +337,6 @@ def reserva_cancel(request, reserva_pk):
             reserva.estado = EstadoReserva.CANCELADA
             reserva.fecha_cancelacion = ahora
             reserva.save()
-
-            if resultado_cancelacion == 'vale':
-                from socios.models import Vale
-                import calendar as cal
-                hoy = timezone.localdate()
-                _, ultimo_dia = cal.monthrange(hoy.year, hoy.month)
-                Vale.objects.create(
-                    socio_id=request.user.id,
-                    actividad=turno.actividad,
-                    fecha_vencimiento=hoy.replace(day=ultimo_dia)
-                )
-                reserva.sena_devuelta = True
-                messages.success(request, 'Clase cancelada. Se generó un vale para la actividad.')
-            elif resultado_cancelacion == 'pierde':
-                messages.warning(request, 'Clase cancelada. No se genera vale por cancelar con menos de 48hs de anticipación.')
-            elif resultado_cancelacion == 'devuelve_total':
-                reserva.devolver_pago()
-                return redirect('simular_reembolso', reserva_pk=reserva.pk)
-            elif resultado_cancelacion == 'devuelve_sena':
-                reserva.devolver_pago()
-                return redirect('simular_reembolso', reserva_pk=reserva.pk)
-            elif resultado_cancelacion == 'pierde_total':
-                messages.warning(request, 'Reserva cancelada. El pago se pierde por cancelar con menos de 24hs de anticipación.')
-            elif resultado_cancelacion == 'pierde_sena':
-                messages.warning(request, 'Reserva cancelada. La seña se pierde por cancelar con menos de 24hs de anticipación.')
-            else:
-                messages.success(request, 'Reserva cancelada correctamente.')
-
-            reserva.save()
-
             #Cuando se cancela una clase envia mensaje a los usuarios en lista de espera para esa clase
             if ListaEspera.objects.filter(
                 clase_programada=reserva.clase_programada,

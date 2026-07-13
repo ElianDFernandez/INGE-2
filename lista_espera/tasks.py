@@ -37,7 +37,7 @@ def notificar_siguiente(clase_programada_id):
     siguiente.save()
     
     # Envía email
-    url_ngrok='https://handstand-aghast-left.ngrok-free.dev'
+    url_ngrok= "https://ashy-streak-slather.ngrok-free.dev"
     subject = f'¡Cupo disponible en {clase_programada.clase.turno.actividad.nombre}!'
     notificacion_url = f"{url_ngrok.rstrip('/')}" + reverse('confirmar_desde_email', args=[siguiente.id])
     
