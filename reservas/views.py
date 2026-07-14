@@ -16,6 +16,7 @@ import qrcode
 
 from .models import Reserva, EstadoReserva, Inscripcion, EstadoInscripcion
 from .forms import ReservaCancelForm, ReservaForm, InscripcionCancelForm, InscripcionForm
+from .models import EstadoInscripcion
 
 from actividades.models import Actividad
 from turnos.models import Turno, Clase, ClaseProgramada
@@ -437,11 +438,16 @@ def inscripcion_confirm(request, turno_pk):
         })
 
     if request.method == 'POST':
+        # Limpiar inscripciones INICIADA abandonadas (pago no completado)
+        Inscripcion.objects.filter(
+            user=request.user, turno=turno, estado='INICIADA'
+        ).delete()
+
         ya_inscripto = Inscripcion.objects.filter(
             user=request.user, turno=turno, estado__in=['ACTIVA']
         ).exists()
         if ya_inscripto:
-            messages.warning(request, 'Ya tenés una inscripción activa o en proceso para este turno.')
+            messages.warning(request, 'Ya tenés una inscripción activa para este turno.')
             return redirect('reservas_disponibles')
         if valor_a_pagar <= 0:
             messages.warning(request, 'No hay clases disponibles para inscribirse.')
@@ -500,30 +506,53 @@ def inscripcion_confirm(request, turno_pk):
 @login_required
 def inscripcion_cancel(request, inscripcion_pk):
     inscripcion = get_object_or_404(Inscripcion, pk=inscripcion_pk, user=request.user, estado='ACTIVA')
-    # muestro que clases se cancelarían si se cancela la inscripcion al turno (solo las activas)
+    # Todas las clases futuras del turno (las que se pierden al darse de baja)
     clases_a_cancelar = inscripcion.turno.get_clases_programadas().filter(
-        fecha__gte=timezone.localdate(),
-        reserva__user=request.user,
-        reserva__estado=EstadoReserva.ACTIVA
+        fecha__gte=timezone.localdate()
     )
+
+    # Calcular el monto a devolver (50% de todas las clases futuras)
+    monto_devuelto = sum(float(cp.clase.costo) * 0.50 for cp in clases_a_cancelar)
 
     if request.method == 'POST':
         form = InscripcionCancelForm(request.POST)
         if form.is_valid():
-            vales_generados = inscripcion.cancelar()
-
-            if vales_generados > 0:
-                messages.success(request, f'Inscripción cancelada. Se generaron {vales_generados} vale{"s" if vales_generados > 1 else ""} para {inscripcion.turno.actividad.nombre}.')
-            else:
-                messages.success(request, 'Inscripción cancelada correctamente.')
-            return redirect('reserva_list')
+            monto, _ = inscripcion.cancelar()
+            return redirect(f'{reverse("simular_reembolso_inscripcion", args=[inscripcion.pk])}?monto={monto}')
     else:
         form = InscripcionCancelForm()
 
     return render(request, 'inscripciones/inscripcion_cancel.html', {
         'form': form,
         'inscripcion': inscripcion,
-        'clases_a_cancelar': clases_a_cancelar
+        'clases_a_cancelar': clases_a_cancelar,
+        'monto_devuelto': monto_devuelto,
+    })
+
+@login_required
+def simular_reembolso_inscripcion(request, inscripcion_pk):
+    """Simula una pantalla de devolución de MercadoPago para inscripciones canceladas."""
+    inscripcion = get_object_or_404(
+        Inscripcion.objects.select_related('turno__actividad'),
+        pk=inscripcion_pk,
+        user=request.user,
+        estado=EstadoInscripcion.DE_BAJA
+    )
+
+    monto_param = request.GET.get('monto')
+    if monto_param:
+        monto_devuelto = float(monto_param)
+    else:
+        # Fallback: 50% de todas las clases futuras del turno al momento de la baja
+        fecha_baja = inscripcion.fecha_baja
+        clases_futuras = inscripcion.turno.get_clases_programadas().filter(
+            fecha__gte=fecha_baja.date()
+        )
+        monto_devuelto = sum(float(cp.clase.costo) * 0.50 for cp in clases_futuras)
+
+    return render(request, 'inscripciones/simular_reembolso_inscripcion.html', {
+        'inscripcion': inscripcion,
+        'monto_devuelto': monto_devuelto,
     })
 
 @login_required

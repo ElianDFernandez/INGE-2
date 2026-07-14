@@ -107,6 +107,14 @@
 
                 </table>
 
+                {% if clases_a_cancelar %}
+                <div class="alert alert-info mt-3">
+                    <i class="fa-solid fa-money-bill-wave me-2"></i>
+                    Se devolverá el <strong>50%</strong> del monto de las clases restantes:
+                    <strong>${{ monto_devuelto }}</strong>
+                </div>
+                {% endif %}
+
                 {% if form.non_field_errors %}
                     {{ form.non_field_errors }}
                 {% endif %}

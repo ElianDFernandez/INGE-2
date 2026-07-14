@@ -203,6 +203,10 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva
+        from django.utils import timezone as tz
+        from decimal import Decimal
+
         clases = self.object.clase_set.filter(activo=True)
         formularios_clases = [ClaseForm(instance=clase) for clase in clases]
         context['clase_forms'] = formularios_clases
@@ -210,6 +214,46 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
         # Enviamos el cupo general (tomando el de la primera clase)
         context['cupo_maximo'] = clases.first().cupo_maximo if clases.exists() else ''
         context['puede_modificar'] = [clase.puede_modificar() for clase in clases] # Lista de booleanos para cada clase
+
+        # --- Impacto de la modificación sobre inscripciones (genera vales) ---
+        inscripciones = Inscripcion.objects.filter(
+            turno=self.object, estado=EstadoInscripcion.ACTIVA
+        ).select_related('user')
+        context['inscripciones_activas'] = inscripciones.count()
+
+        hoy = tz.localdate()
+        vales_a_generar = 0
+        monto_en_vales = Decimal('0')
+        for inscripcion in inscripciones:
+            clases_futuras = self.object.get_clases_programadas().filter(fecha__gte=hoy)
+            reservas_activas = Reserva.objects.filter(
+                user=inscripcion.user,
+                clase_programada__in=clases_futuras,
+                estado=EstadoReserva.ACTIVA,
+            )
+            vales_a_generar += reservas_activas.count()
+            for reserva in reservas_activas:
+                monto_en_vales += reserva.clase_programada.clase.costo
+
+        context['vales_a_generar'] = vales_a_generar
+        context['monto_en_vales'] = monto_en_vales
+
+        # --- Reservas individuales (socios NO inscriptos) ---
+        users_inscriptos = inscripciones.values_list('user_id', flat=True)
+        reservas_individuales_query = Reserva.objects.filter(
+            clase_programada__clase__turno=self.object,
+            estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO],
+        ).exclude(user_id__in=users_inscriptos).select_related('clase_programada__clase')
+        context['reservas_individuales'] = reservas_individuales_query.count()
+
+        monto_devuelto_individuales = Decimal('0')
+        for r in reservas_individuales_query:
+            if r.estado == EstadoReserva.ACTIVA:
+                monto_devuelto_individuales += r.clase_programada.clase.costo
+            elif r.estado == EstadoReserva.PENDIENTE_PAGO:
+                monto_devuelto_individuales += r.clase_programada.clase.costo * Decimal('0.50')
+        context['monto_devuelto_individuales'] = monto_devuelto_individuales
+
         return context
 
     def post(self, request, *args, **kwargs):
@@ -280,13 +324,33 @@ class TurnoUpdateView(TurnoActividadRequiredMixin, UpdateView):
 
         if not hay_errores:
             if hubo_modificacion:
-                from reservas.models import Inscripcion, EstadoInscripcion
+                from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva as ER
 
                 inscripciones_activas = Inscripcion.objects.filter(turno=self.object, estado=EstadoInscripcion.ACTIVA)
+                total_vales = 0
                 for inscripcion in inscripciones_activas:
-                    inscripcion.cancelar(por_modificacion_empleado=True)
+                    _, vales = inscripcion.cancelar(por_modificacion_empleado=True)
+                    total_vales += vales
+
+                # Devolver dinero a socios con reservas individuales (NO inscriptos)
+                users_inscriptos = inscripciones_activas.values_list('user_id', flat=True)
+                reservas_individuales = Reserva.objects.filter(
+                    clase_programada__clase__turno=self.object,
+                    estado__in=[ER.ACTIVA, ER.PENDIENTE_PAGO],
+                ).exclude(user_id__in=users_inscriptos)
+                cant_devoluciones_individuales = reservas_individuales.count()
+                reservas_individuales.update(sena_devuelta=True)
+
+                # Construir mensaje
+                partes = []
                 if inscripciones_activas.exists():
-                    messages.success(request, 'Turno actualizado. Las inscripciones previas fueron canceladas y se generaron los vales correspondientes.')
+                    cant = inscripciones_activas.count()
+                    partes.append(f'{cant} inscripci{"ón" if cant == 1 else "ones"} cancelada{"s" if cant > 1 else ""} con {total_vales} vale{"s" if total_vales != 1 else ""} generado{"s" if total_vales != 1 else ""}')
+                if cant_devoluciones_individuales > 0:
+                    partes.append(f'devolución a {cant_devoluciones_individuales} socio{"s" if cant_devoluciones_individuales > 1 else ""} con reserva{"s" if cant_devoluciones_individuales > 1 else ""} individual{"es" if cant_devoluciones_individuales > 1 else ""}')
+
+                if partes:
+                    messages.success(request, f'Turno actualizado. {", ".join(partes)}.')
                 else:
                     messages.success(request, 'Turno actualizado.')
 
@@ -339,18 +403,51 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva
+        from django.utils import timezone as tz
+        from decimal import Decimal
+
         context['en_curso'] = self.object.esta_en_curso_ahora()
-        context['inscripciones_activas'] = Inscripcion.objects.filter(
+
+        # --- Inscripciones activas ---
+        inscripciones = Inscripcion.objects.filter(
             turno=self.object, estado=EstadoInscripcion.ACTIVA
-        ).count()
-        # Reservas de socios que NO están inscriptos (clases individuales)
-        users_inscriptos = Inscripcion.objects.filter(
-            turno=self.object, estado=EstadoInscripcion.ACTIVA
-        ).values_list('user_id', flat=True)
-        context['reservas_individuales'] = Reserva.objects.filter(
+        ).select_related('user')
+        context['inscripciones_activas'] = inscripciones.count()
+
+        # Calcular impacto por inscripciones (ahora genera vales en lugar de devolución monetaria)
+        hoy = tz.localdate()
+        vales_a_generar = 0
+        monto_en_vales = Decimal('0')
+        for inscripcion in inscripciones:
+            clases_futuras = self.object.get_clases_programadas().filter(fecha__gte=hoy)
+            reservas_activas = Reserva.objects.filter(
+                user=inscripcion.user,
+                clase_programada__in=clases_futuras,
+                estado=EstadoReserva.ACTIVA,
+            )
+            vales_a_generar += reservas_activas.count()
+            for reserva in reservas_activas:
+                monto_en_vales += reserva.clase_programada.clase.costo
+
+        context['vales_a_generar'] = vales_a_generar
+        context['monto_en_vales'] = monto_en_vales
+
+        # --- Reservas individuales (socios NO inscriptos) ---
+        users_inscriptos = inscripciones.values_list('user_id', flat=True)
+        reservas_individuales_pagas = Reserva.objects.filter(
             clase_programada__clase__turno=self.object,
-            estado=EstadoReserva.ACTIVA
-        ).exclude(user_id__in=users_inscriptos).count()
+            estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO],
+        ).exclude(user_id__in=users_inscriptos).select_related('clase_programada__clase')
+        context['reservas_individuales'] = reservas_individuales_pagas.count()
+
+        monto_devuelto_individuales = Decimal('0')
+        for r in reservas_individuales_pagas:
+            if r.estado == EstadoReserva.ACTIVA:
+                monto_devuelto_individuales += r.clase_programada.clase.costo
+            elif r.estado == EstadoReserva.PENDIENTE_PAGO:
+                monto_devuelto_individuales += r.clase_programada.clase.costo * Decimal('0.50')
+        context['monto_devuelto_individuales'] = monto_devuelto_individuales
+
         return context
 
     def post(self, request, *args, **kwargs):
@@ -363,28 +460,29 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
             )
             return redirect(self.success_url)
 
-        # Cancelar inscripciones activas (genera vales para reservas pagas)
+        # Cancelar inscripciones activas (genera vales por cada clase cancelada)
         from reservas.models import Inscripcion, EstadoInscripcion, Reserva, EstadoReserva
         inscripciones = Inscripcion.objects.filter(turno=self.object, estado=EstadoInscripcion.ACTIVA)
         cantidad_inscripciones = inscripciones.count()
-        vales_totales = 0
+        total_vales = 0
         for inscripcion in inscripciones:
-            vales_totales += inscripcion.cancelar(por_modificacion_empleado=True)
+            _, vales = inscripcion.cancelar(por_modificacion_empleado=True)
+            total_vales += vales
 
-        # Marcar seña devuelta para socios con clases individuales pagas
-        reservas_individuales_pagas = Reserva.objects.filter(
+        # Devolver dinero a socios con reservas individuales (NO inscriptos)
+        users_inscriptos = inscripciones.values_list('user_id', flat=True)
+        reservas_individuales = Reserva.objects.filter(
             clase_programada__clase__turno=self.object,
-            estado=EstadoReserva.ACTIVA,
-            pago_confirmado=True
-        )
-        cant_devoluciones_individuales = reservas_individuales_pagas.count()
-        reservas_individuales_pagas.update(sena_devuelta=True)
-        
-        #Cancelo las anotaciones en lista de espera de la clase
+            estado__in=[EstadoReserva.ACTIVA, EstadoReserva.PENDIENTE_PAGO],
+        ).exclude(user_id__in=users_inscriptos)
+        cant_devoluciones_individuales = reservas_individuales.count()
+        reservas_individuales.update(sena_devuelta=True)
+
+        # Cancelar anotaciones en lista de espera
         from lista_espera.models import ListaEspera, EstadoListaEspera
         ListaEspera.objects.filter(
-        clase_programada__clase__turno=self.object,
-        estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]
+            clase_programada__clase__turno=self.object,
+            estado__in=[EstadoListaEspera.PENDIENTE, EstadoListaEspera.NOTIFICADO]
         ).update(estado=EstadoListaEspera.CANCELADO)
 
         # Desactivar turno y clases (soft delete)
@@ -393,11 +491,9 @@ class TurnoDeleteView(TurnoActividadRequiredMixin, DeleteView):
         # Construir mensaje
         partes = []
         if cantidad_inscripciones > 0:
-            partes.append(f'{cantidad_inscripciones} inscripci{"ón" if cantidad_inscripciones == 1 else "ones"} cancelada{"s" if cantidad_inscripciones > 1 else ""}')
-        if vales_totales > 0:
-            partes.append(f'{vales_totales} vale{"s" if vales_totales > 1 else ""} de reembolso generado{"s" if vales_totales > 1 else ""}')
+            partes.append(f'{cantidad_inscripciones} inscripci{"ón" if cantidad_inscripciones == 1 else "ones"} cancelada{"s" if cantidad_inscripciones > 1 else ""} con {total_vales} vale{"s" if total_vales != 1 else ""} generado{"s" if total_vales != 1 else ""}')
         if cant_devoluciones_individuales > 0:
-            partes.append(f'devolución de seña a {cant_devoluciones_individuales} socio{"s" if cant_devoluciones_individuales > 1 else ""} con clase{"s" if cant_devoluciones_individuales > 1 else ""} individual{"es" if cant_devoluciones_individuales > 1 else ""}')
+            partes.append(f'devolución a {cant_devoluciones_individuales} socio{"s" if cant_devoluciones_individuales > 1 else ""} con reserva{"s" if cant_devoluciones_individuales > 1 else ""} individual{"es" if cant_devoluciones_individuales > 1 else ""}')
 
         if partes:
             messages.success(request, f'Turno "{self.object.nombre}" eliminado. {", ".join(partes)}.')
