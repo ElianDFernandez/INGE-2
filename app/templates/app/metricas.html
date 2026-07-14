@@ -88,13 +88,15 @@
         border-radius: 16px;
         padding: 28px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        height: 100%;
     }
 </style>
 
+{# ═══════════════════════ HEADER ═══════════════════════ #}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-4">
     <div>
         <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700; color: var(--cad-primary);">
-            ¡Hola, {{ user.username|default:"Usuario" }}! 👋 
+            ¡Hola, {{ user.username|default:"Usuario" }}! 👋
         </h1>
         <p class="text-muted mb-0">Resumen del sistema — {{ mes_nombre }} {{ hoy.year }}</p>
     </div>
@@ -106,13 +108,13 @@
 {% if hay_datos %}
 
 {# ═══════════════════════ SECCIÓN 1: SOCIOS ═══════════════════════ #}
-<div class="mb-4">
+<div class="mb-3">
     <span class="section-title"><i class="fa-solid fa-users me-2"></i>Socios</span>
 </div>
 <div class="row g-3 mb-5">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="metric-card">
-            <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
                 <div class="metric-icon" style="background: #e8f4fd; color: #0d6efd;">
                     <i class="fa-solid fa-users"></i>
                 </div>
@@ -121,25 +123,81 @@
                     <div class="metric-label">Socios activos</div>
                 </div>
             </div>
-            <div class="d-flex justify-content-between border-top pt-3 mt-1">
-                <div class="text-center flex-fill">
-                    <div class="fw-bold text-success">{{ abonados }}</div>
-                    <div class="metric-label">Abonados</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <div class="d-flex align-items-center gap-3">
+                <div class="metric-icon" style="background: #d4edda; color: #198754;">
+                    <i class="fa-solid fa-receipt"></i>
                 </div>
-                <div class="vr"></div>
-                <div class="text-center flex-fill">
-                    <div class="fw-bold text-info">{{ ocasionales }}</div>
+                <div>
+                    <div class="metric-value">{{ abonados }}</div>
+                    <div class="metric-label">Con inscripción</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <div class="d-flex align-items-center gap-3">
+                <div class="metric-icon" style="background: #cff4fc; color: #0dcaf0;">
+                    <i class="fa-solid fa-user-clock"></i>
+                </div>
+                <div>
+                    <div class="metric-value">{{ ocasionales }}</div>
                     <div class="metric-label">Ocasionales</div>
                 </div>
             </div>
         </div>
     </div>
-
-
 </div>
 
-{# ═══════════════════════ SECCIÓN 2: OCUPACIÓN ═══════════════════════ #}
-<div class="mb-4">
+{# ═══════════════════════ SECCIÓN 2: RESERVAS Y ASISTENCIA ═══════════════════════ #}
+<div class="mb-3">
+    <span class="section-title"><i class="fa-solid fa-calendar-check me-2"></i>Reservas y Asistencia</span>
+</div>
+<div class="row g-3 mb-5">
+    <div class="col-6 col-md-3">
+        <div class="metric-card text-center">
+            <div class="metric-icon mx-auto mb-2" style="background: #cce5ff; color: #0d6efd;">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div class="metric-value">{{ reservas_activas }}</div>
+            <div class="metric-label">Activas</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card text-center">
+            <div class="metric-icon mx-auto mb-2" style="background: #f8d7da; color: #dc3545;">
+                <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <div class="metric-value">{{ reservas_canceladas }}</div>
+            <div class="metric-label">Cancelaciones</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card text-center">
+            <div class="metric-icon mx-auto mb-2" style="background: #d4edda; color: #198754;">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div class="metric-value">{{ presentes }}</div>
+            <div class="metric-label">Asistencias</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="metric-card text-center">
+            <div class="metric-icon mx-auto mb-2" style="background: #fff3cd; color: #d39e00;">
+                <i class="fa-solid fa-user-xmark"></i>
+            </div>
+            <div class="metric-value">{{ ausentes }}</div>
+            <div class="metric-label">Inasistencias</div>
+        </div>
+    </div>
+</div>
+
+{# ═══════════════════════ SECCIÓN 3: OCUPACIÓN Y DEMANDA ═══════════════════════ #}
+<div class="mb-3">
     <span class="section-title"><i class="fa-solid fa-chart-pie me-2"></i>Ocupación y Demanda</span>
 </div>
 <div class="row g-3 mb-5">
@@ -210,55 +268,12 @@
     </div>
 </div>
 
-{# ═══════════════════════ SECCIÓN 3: RESERVAS ═══════════════════════ #}
-<div class="mb-4">
-    <span class="section-title"><i class="fa-solid fa-calendar-check me-2"></i>Reservas y Asistencia</span>
-</div>
-<div class="row g-3 mb-5">
-    <div class="col-md-3">
-        <div class="metric-card text-center">
-            <div class="metric-icon mx-auto mb-2" style="background: #cce5ff; color: #0d6efd;">
-                <i class="fa-solid fa-calendar-check"></i>
-            </div>
-            <div class="metric-value">{{ reservas_activas }}</div>
-            <div class="metric-label">Reservas activas</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="metric-card text-center">
-            <div class="metric-icon mx-auto mb-2" style="background: #f8d7da; color: #dc3545;">
-                <i class="fa-solid fa-calendar-xmark"></i>
-            </div>
-            <div class="metric-value">{{ reservas_canceladas }}</div>
-            <div class="metric-label">Cancelaciones</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="metric-card text-center">
-            <div class="metric-icon mx-auto mb-2" style="background: #d4edda; color: #198754;">
-                <i class="fa-solid fa-user-check"></i>
-            </div>
-            <div class="metric-value">{{ presentes }}</div>
-            <div class="metric-label">Asistencias</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="metric-card text-center">
-            <div class="metric-icon mx-auto mb-2" style="background: #fff3cd; color: #d39e00;">
-                <i class="fa-solid fa-user-xmark"></i>
-            </div>
-            <div class="metric-value">{{ ausentes }}</div>
-            <div class="metric-label">Inasistencias</div>
-        </div>
-    </div>
-</div>
-
 {# ═══════════════════════ SECCIÓN 4: FINANZAS ═══════════════════════ #}
-<div class="mb-4">
+<div class="mb-3">
     <span class="section-title"><i class="fa-solid fa-dollar-sign me-2"></i>Finanzas</span>
 </div>
 <div class="row g-3 mb-5">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="metric-card">
             <div class="d-flex align-items-center gap-3">
                 <div class="metric-icon" style="background: #d4edda; color: #198754;">
@@ -272,7 +287,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="metric-card">
             <div class="d-flex align-items-center gap-3">
                 <div class="metric-icon" style="background: #f8d7da; color: #dc3545;">
@@ -286,7 +301,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 {% else %}
