@@ -55,7 +55,8 @@ class Reserva(models.Model):
         return Inscripcion.objects.filter(
             user=self.user,
             turno=self.clase_programada.clase.turno,
-        ).exclude(estado=EstadoInscripcion.DE_BAJA).exists()
+            estado__in=[EstadoInscripcion.ACTIVA, EstadoInscripcion.PENDIENTE_PAGO],
+        ).exists()
 
     @property
     def corresponde_devolucion(self):
@@ -326,6 +327,39 @@ class Inscripcion(models.Model):
 
         send_mail(
             subject=f'Aviso de pago - {self.turno.nombre} ({self.turno.actividad.nombre})',
+            message=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[self.user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+
+    def enviar_notificacion_baja_falta_pago(self):
+        """
+        Envía un email al socio notificando que su inscripción fue dada de baja
+        por falta de pago.
+        """
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from django.conf import settings
+
+        hoy = timezone.localdate()
+        fecha_limite = hoy.replace(day=15)
+        if hoy >= fecha_limite:
+            fecha_limite = (hoy.replace(day=1) + timezone.timedelta(days=32)).replace(day=15)
+
+        html_message = render_to_string('reservas/email_baja_falta_pago.html', {
+            'usuario': self.user,
+            'turno': self.turno,
+            'actividad': self.turno.actividad,
+            'fecha_limite': fecha_limite,
+        })
+
+        text_message = strip_tags(html_message)
+
+        send_mail(
+            subject=f'Baja por falta de pago - {self.turno.nombre} ({self.turno.actividad.nombre})',
             message=text_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[self.user.email],

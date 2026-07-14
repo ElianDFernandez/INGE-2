@@ -248,8 +248,6 @@ def metricas(request):
     abonados = users_abonados.count()
     ocasionales = max(0, socios_activos - abonados)
 
-    suspendidos = 0  # No hay mecanismo de suspensión implementado
-
     # ── Ocupación ──
     clases_mes = ClaseProgramada.objects.filter(
         fecha__year=hoy.year, fecha__month=hoy.month, clase__activo=True
@@ -310,9 +308,6 @@ def metricas(request):
     presentes = reservas_mes.filter(estado=EstadoReserva.PRESENTE).count()
     ausentes = reservas_mes.filter(estado=EstadoReserva.AUSENTE).count()
 
-    # ── Listas de espera ──
-    listas_espera = 0  # No implementado
-
     # ── ¿Hay datos? ──
     hay_datos = any([
         socios_activos, total_capacidad,
@@ -332,7 +327,7 @@ def metricas(request):
         'socios_activos': socios_activos,
         'abonados': abonados,
         'ocasionales': ocasionales,
-        'suspendidos': suspendidos,
+
         # Ocupación
         'total_ocupados': total_ocupados,
         'total_capacidad': total_capacidad,
@@ -349,5 +344,5 @@ def metricas(request):
         'presentes': presentes,
         'ausentes': ausentes,
         # Listas de espera
-        'listas_espera': listas_espera,
+
     })

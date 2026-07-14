@@ -438,7 +438,7 @@ def inscripcion_confirm(request, turno_pk):
 
     if request.method == 'POST':
         ya_inscripto = Inscripcion.objects.filter(
-            user=request.user, turno=turno, estado__in=['ACTIVA', 'INICIADA']
+            user=request.user, turno=turno, estado__in=['ACTIVA']
         ).exists()
         if ya_inscripto:
             messages.warning(request, 'Ya tenés una inscripción activa o en proceso para este turno.')

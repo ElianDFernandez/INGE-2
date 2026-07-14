@@ -134,22 +134,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="metric-card">
-            <div class="d-flex align-items-center gap-3">
-                <div class="metric-icon" style="background: #fff3cd; color: #d39e00;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div>
-                    <div class="metric-value">{{ suspendidos }}</div>
-                    <div class="metric-label">Suspendidos por falta de pago</div>
-                    {% if suspendidos == 0 %}
-                        <small class="text-muted">No hay mecanismo de suspensión implementado</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+
 
 </div>
 
@@ -301,20 +286,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="metric-card">
-            <div class="d-flex align-items-center gap-3">
-                <div class="metric-icon" style="background: #e2e3e5; color: #6c757d;">
-                    <i class="fa-solid fa-users-slash"></i>
-                </div>
-                <div>
-                    <div class="metric-value">{{ listas_espera }}</div>
-                    <div class="metric-label">Tamaño listas de espera</div>
-                    <small class="text-muted">No implementado aún</small>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 {% else %}

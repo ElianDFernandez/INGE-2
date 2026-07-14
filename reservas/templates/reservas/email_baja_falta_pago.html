@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;">
+    <tr>
+        <td style="background:#e74c3c;padding:16px 24px;">
+            <h2 style="margin:0;color:#ffffff;font-size:20px;">CAD - Baja por falta de pago</h2>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:24px;">
+            <p style="font-size:15px;color:#333;">Hola <strong>{{ usuario.username }}</strong>,</p>
+            <p style="font-size:14px;color:#555;">
+                Te informamos que tu inscripción al turno <strong>{{ turno.nombre }}</strong> de <strong>{{ actividad.nombre }}</strong> fue dada de baja automáticamente por falta de pago.
+            </p>
+
+            <table width="100%" cellpadding="12" cellspacing="0" style="background:#f8d7da;border:1px solid #f5c6cb;border-radius:4px;margin:16px 0;">
+                <tr>
+                    <td style="font-size:14px;color:#721c24;">
+                        ❌ <strong>Tu inscripción fue cancelada</strong> porque no se registró el pago antes del día {{ fecha_limite|date:"d/m/Y" }}.<br>
+                        Todas las reservas asociadas a este turno también fueron canceladas.
+                    </td>
+                </tr>
+            </table>
+
+            <table width="100%" cellpadding="10" cellspacing="0" style="border:1px solid #ddd;border-radius:4px;margin:16px 0;">
+                <tr>
+                    <td style="font-size:14px;color:#555;border-bottom:1px solid #eee;">Turno:</td>
+                    <td style="font-size:14px;color:#333;font-weight:bold;border-bottom:1px solid #eee;text-align:right;">{{ turno.nombre }}</td>
+                </tr>
+                <tr>
+                    <td style="font-size:14px;color:#555;">Actividad:</td>
+                    <td style="font-size:14px;color:#333;font-weight:bold;text-align:right;">{{ actividad.nombre }}</td>
+                </tr>
+            </table>
+
+            <p style="font-size:14px;color:#555;">
+                Si querés volver a inscribirte, podés hacerlo desde la plataforma.
+            </p>
+
+            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+            <p style="font-size:12px;color:#999;margin:0;">Este es un mensaje automático, no es necesario responder.</p>
+        </td>
+    </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
