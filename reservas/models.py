@@ -232,20 +232,17 @@ class Inscripcion(models.Model):
     def get_costo_final(self):
         """
         Retorna el costo final del turno, aplicando descuentos si aplica.
-        - 20% de descuento si el socio no tiene cancelaciones de inscripciones en el mes
-          Y tiene menos de 3 cancelaciones de reservas individuales en el mes.
+        - 20% de descuento si el socio NO tiene cancelaciones de turnos
+        - Y tiene menos de 3 cancelaciones de reservas individuales.
         """
         from socios.models import Socio
         costo_total = self.get_costo()
         descuento = Decimal('0')
         try:
             socio = Socio.objects.get(pk=self.user_id)
-            # 1) Cualquier cancelación de inscripción en el mes → pierde descuento
-            if socio.get_cancelaciones().exists():
-                return costo_total
-            # 2) 3 o más cancelaciones de reservas individuales en el mes → pierde descuento
-            if socio.get_cancelaciones_reservas().count() >= 3:
-                return costo_total
+            tiene_cancel_turnos = socio.get_cancelaciones().exists()
+            tiene_3_cancel_reservas = socio.get_cancelaciones_reservas().count() >= 3
+            if not tiene_cancel_turnos and not tiene_3_cancel_reservas:
                 descuento = costo_total * Decimal('0.20')
         except Exception:
             pass
