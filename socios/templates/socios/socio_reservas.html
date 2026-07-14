@@ -58,13 +58,11 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if reserva.clase_programada.ya_finalizo %}
-                                    {% if reserva.asistio %}
-                                        <span class="badge bg-success mb-1"><i class="fa-solid fa-check me-1"></i>Presente</span>
-                                        <small class="text-muted d-block" style="font-size: 0.70rem;">Por: {{ reserva.get_metodo_asistencia_display }}</small>
-                                    {% else %}
-                                        <span class="badge bg-secondary mb-1">Ausente</span>
-                                    {% endif %}
+                                {% if reserva.asistio %}
+                                    <span class="badge bg-success mb-1"><i class="fa-solid fa-check me-1"></i>Presente</span>
+                                    <small class="text-muted d-block" style="font-size: 0.70rem;">Por: {{ reserva.get_metodo_asistencia_display }}</small>
+                                {% elif reserva.clase_programada.ya_ %}
+                                    <span class="badge bg-secondary mb-1">Ausente</span>
                                 {% else %}
                                     <span>-</span>
                                 {% endif %}

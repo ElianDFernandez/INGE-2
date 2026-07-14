@@ -76,7 +76,7 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Asistencia" class="pe-md-4">
-                                    {% if reserva.asistencia %}
+                                    {% if reserva.asistio %}
                                         <span class="badge bg-success bg-opacity-10 text-dark border">
                                             Presente
                                         </span>
@@ -171,13 +171,14 @@
                                     </a>
                                     {% elif inscripcion.estado == 'ACTIVA' %}
                                     {% if inscripcion.costo_renovacion and inscripcion.costo_renovacion > 0 %}
-                                    <a href="{% url 'renovar_inscripcion_confirm' inscripcion.turno.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap me-1">
+                                    <a href="{% url 'renovar_inscripcion_confirm' inscripcion.turno.pk %}" class="btn btn-sm btn-primary btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-arrows-rotate me-1"></i> Renovar Turno
                                     </a>
-                                    {% endif %}
+                                    {% else %}
                                     <a href="{% url 'inscripcion_cancel' inscripcion.pk %}" class="btn btn-sm btn-outline-danger btn-accion-movil text-nowrap">
                                         <i class="fa-solid fa-xmark me-1"></i> Dar de baja
                                     </a>
+                                    {% endif %}
                                     {% endif %}
                                 </td>
                             </tr>
